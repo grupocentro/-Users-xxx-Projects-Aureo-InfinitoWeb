@@ -37,7 +37,10 @@
       "Edit(/.claude/skills/infinito-qa/**)",
       "Bash(git config *)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(grep -E \"^\\\\.env$|node_modules|^dist/|\\\\.local$\")",
+      "Bash(git commit *)",
+      "Bash(awk '{print $9, $5}')"
     ],
     "additionalDirectories": [
       "/Users/xxx/.claude/projects/-Users-xxx-Projects-Aureo-InfinitoWeb",

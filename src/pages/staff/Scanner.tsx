@@ -70,6 +70,16 @@ function vibrate(pattern: number[]) {
   }
 }
 
+// Heurística simple de device detection para el _metadata de validar_qr.
+// La BD recibe esto como string libre dentro de qr_validaciones.metadata.
+function detectDeviceType(): "mobile" | "tablet" | "desktop" {
+  if (typeof navigator === "undefined") return "desktop";
+  const ua = navigator.userAgent;
+  if (/iPad|tablet/i.test(ua)) return "tablet";
+  if (/Mobile|iPhone|Android/i.test(ua)) return "mobile";
+  return "desktop";
+}
+
 // =============================================================================
 // Componente
 // =============================================================================
@@ -152,11 +162,23 @@ export default function Scanner() {
 
     try {
       // NOTA: `validar_qr` se agregó en migración 20260518230000.
-      // types.ts autogenerado no la conoce todavía, por eso casteamos.
-      // Cuando se regenere src/integrations/supabase/types.ts quedará tipado formal.
+      // En migración 20260520120100 se agregó la sobrecarga `validar_qr(text, jsonb)`
+      // que acepta metadata extra del cliente. La firma de 1 arg sigue funcionando
+      // (wrapper backwards-compat), por eso PostgreSQL elige la de 2 args al
+      // recibir _metadata. types.ts autogenerado no la conoce todavía → cast.
+      //
+      // punto_acceso_id queda en null hasta que se implemente el selector.
+      const metadata = {
+        scanner_source: "staff_scanner",
+        device_type: detectDeviceType(),
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+        timestamp_local: new Date().toISOString(),
+        punto_acceso_id: null,
+      };
+
       const { data, error } = await supabase.rpc(
         "validar_qr" as never,
-        { _uuid_code: trimmed } as never,
+        { _uuid_code: trimmed, _metadata: metadata } as never,
       );
 
       if (error) {

@@ -1,6 +1,6 @@
 # PHASE_STATUS.md — Estado de fases del proyecto
 
-> Última actualización: 2026-05-20
+> Última actualización: 2026-05-20 (post-Fase 3)
 
 Este documento registra el estado real de cada fase del proyecto **Reorganización Admin Dual Mode** de Infinito Water Park.
 
@@ -11,7 +11,7 @@ Este documento registra el estado real de cada fase del proyecto **Reorganizaci�
 | 0 | Infraestructura BD + deps | ✅ Cerrada | 2026-05-20 |
 | 1 | Selector premium + dual layout | ✅ Cerrada | 2026-05-20 |
 | 2 | Modo Sistema completo | ✅ Cerrada | 2026-05-20 |
-| 3 | Modo Web: CRUDs nuevos | ⏳ Pendiente de autorización | — |
+| 3 | Modo Web: CRUDs nuevos | ✅ Cerrada | 2026-05-20 |
 | 4 | Web Analytics | ⏳ Pendiente de autorización | — |
 | 5 | QA final + polish | ⏳ Pendiente de autorización | — |
 
@@ -92,22 +92,32 @@ Este documento registra el estado real de cada fase del proyecto **Reorganizaci�
 
 ## Fase 3 — Modo Web: CRUDs nuevos
 
-**Estado**: ⏳ Pendiente de autorización.
+**Estado**: ✅ Cerrada técnicamente.
 
-### Alcance esperado
+### Entregado
 
-- Implementar CRUD funcional sobre tablas ya creadas en Fase 0:
-  - `src/pages/admin/AdminContenido.tsx` — reemplazar placeholder con CRUD sobre `contenido_web`.
-  - `src/pages/admin/web/Noticias.tsx` — CRUD sobre `noticias` (drag&drop orden, upload imagen).
-  - `src/pages/admin/web/Ofertas.tsx` — CRUD sobre `ofertas` con vigencia y descuento.
-  - `src/pages/admin/web/Calendario.tsx` — vista calendario con CRUD de etiquetas y modificadores de precio.
-- Refactor opcional: hook `useCrudAdmin<T>` para reducir duplicación entre CRUDs.
+- 5 archivos reescritos/extendidos:
+  - `src/pages/admin/AdminContenido.tsx` — CRUD key-value sobre `contenido_web` con búsqueda y filtro por tipo. Detecta UNIQUE violation con mensaje claro.
+  - `src/pages/admin/web/Noticias.tsx` — CRUD completo con upload de imagen (bucket `eventos/noticias/`), estados borrador/publicado/archivado, filtro y reorden subir/bajar swap.
+  - `src/pages/admin/web/Ofertas.tsx` — CRUD con descuento %, vigencia (calculada en cliente: vigente/futura/vencida/sin_vigencia), doble filtro independiente, validación `vigencia_desde ≤ vigencia_hasta`.
+  - `src/pages/admin/web/Calendario.tsx` — CRUD por fecha (UNIQUE) con 6 colores preset + hex libre, modificador de precio numérico libre, filtro futuro/pasado/todos.
+  - `src/pages/admin/web/WebDashboard.tsx` — extendido con 8 KPIs reales en 2 secciones (Contenido publicado / Catálogo) + lista de próximos 5 días especiales + grid de 8 accesos rápidos premium.
 
-### Pre-requisitos
+### Bundle (post-Fase 3)
 
-- ✅ Tablas BD ya creadas (Fase 0).
-- ✅ Sidebars Web con items mapeados (Fase 1).
-- ✅ Placeholders existentes (Fase 1).
+- Bundle inicial: **650.63 kB** (gzip 188.58 kB) — sin inflar vs Fase 2.
+- Cada CRUD lazy-loaded: AdminContenido 6.97 kB · WebDashboard 6.67 kB · Calendario 8.95 kB · Noticias 10.59 kB · Ofertas 12.13 kB.
+
+### Decisiones tomadas
+
+- ⚠️ **No se agregó campo `estado`** a `contenido_web` (el schema actual es key-value y no lo tiene). No inventamos campos.
+- ⚠️ **`punto_acceso_id` queda en `null`** en Scanner hasta que se implemente un selector visual (Scanner ya envía `_metadata` desde el mini-ajuste pre-Fase 3, pero sin punto seleccionado).
+- ⚠️ **`precio_modificador` del calendario se persiste pero no se aplica al flujo `/comprar`** todavía. La conexión con pricing dinámico es trabajo de una fase futura.
+
+### Pendientes menores conocidos
+
+- ℹ️ Reorden de noticias es subir/bajar swap (mismo patrón vecino-a-vecino). Drag-and-drop real queda como mejora opcional.
+- ℹ️ Bucket `eventos` se reutiliza para imágenes de noticias y ofertas con prefijos. Si se quiere separar, requiere migración de bucket.
 
 ---
 
@@ -143,6 +153,21 @@ Este documento registra el estado real de cada fase del proyecto **Reorganizaci�
 - Pruebas manuales del flujo completo (login → selector → modos → CRUDs → exports).
 - Type check + lint final.
 - Eliminación de archivos huérfanos (`AdminLayout.tsx` viejo, `AdminSidebar.tsx` viejo).
+
+---
+
+## Pendientes globales del proyecto (no específicos de una fase)
+
+### 🔴 Crítico — BLOQUEANTE para producción
+- **x-signature MercadoPago**: el webhook `webhook-mercadopago/index.ts` valida amount comparison e idempotencia, pero **no verifica la firma HMAC** del payload entrante. Cualquiera con el `payment_id` puede forzar reverificación. Requiere implementar verificación HMAC con `MP_WEBHOOK_SECRET` cargado en Supabase Secrets. **No autorizar deploy productivo sin esto.**
+
+### 🟠 Pendientes menores
+- **Selector visual de `punto_acceso_id` en Scanner**: la RPC `validar_qr(text, jsonb)` y el frontend ya soportan metadata extra. Falta UI en `Scanner.tsx` para que el operador seleccione el punto antes de escanear. Sin esto, las validaciones registran `punto_acceso_id: null` en `qr_validaciones.metadata`.
+- **`precio_modificador` del calendario sin conectar a `/comprar`**: el campo se persiste en la tabla `calendario` (Fase 0 + CRUD Fase 3) pero el flujo de compra no lo lee. Conectarlo requiere ajustar `Comprar.tsx` y posiblemente la función SQL `calcular_total_compra()`. Pendiente de definición de fase.
+
+### ℹ️ Informativos
+- Vulnerabilidad transitiva `dompurify` (XSS, moderate) vía jspdf. No nos afecta (sólo usamos `autoTable` con datos tabulares, sin HTML embebido). Mitigable con upgrade a `jspdf@4.x` cuando sea estable.
+- Bundle inicial 650 kB sigue arriba del warning de Vite (500 kB). Mitigación pendiente para Fase 5 (code-splitting adicional + manualChunks).
 
 ---
 
