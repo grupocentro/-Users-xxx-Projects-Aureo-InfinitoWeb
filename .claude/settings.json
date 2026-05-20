@@ -42,7 +42,8 @@
       "Bash(git commit *)",
       "Bash(awk '{print $9, $5}')",
       "Bash(awk '{print $0}')",
-      "Bash(awk '{print $5, $9}')"
+      "Bash(awk '{print $5, $9}')",
+      "Bash(grep -B1 -A3 \"isAdmin\\\\|isStaff\\\\|isAdminOrEditor\\\\|navigate.*\\\\\\(login\\\\|/$\\\\|seleccionar\\\\|staff/scanner\\\\\\)\" /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/admin/web/WebLayout.tsx /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/admin/sistema/SistemaLayout.tsx /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/admin/AdminSelector.tsx /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/staff/Scanner.tsx)"
     ],
     "additionalDirectories": [
       "/Users/xxx/.claude/projects/-Users-xxx-Projects-Aureo-InfinitoWeb",

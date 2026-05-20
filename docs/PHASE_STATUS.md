@@ -1,6 +1,6 @@
 # PHASE_STATUS.md — Estado de fases del proyecto
 
-> Última actualización: 2026-05-20 (post-Fase 4)
+> Última actualización: 2026-05-20 (post-Fase 5)
 
 Este documento registra el estado real de cada fase del proyecto **Reorganización Admin Dual Mode** de Infinito Water Park.
 
@@ -13,7 +13,7 @@ Este documento registra el estado real de cada fase del proyecto **Reorganizaci�
 | 2 | Modo Sistema completo | ✅ Cerrada | 2026-05-20 |
 | 3 | Modo Web: CRUDs nuevos | ✅ Cerrada | 2026-05-20 |
 | 4 | Web Analytics | ✅ Cerrada | 2026-05-20 |
-| 5 | QA final + polish | ⏳ Pendiente de autorización | — |
+| 5 | QA final + polish | ✅ Cerrada | 2026-05-20 |
 
 > El estado de "cerrada" refleja la realidad técnica (build verde y código mergeado). La aprobación operativa final (deploy producción + QA en runtime) es una etapa posterior independiente.
 
@@ -168,16 +168,53 @@ Este documento registra el estado real de cada fase del proyecto **Reorganizaci�
 
 ## Fase 5 — QA final + polish
 
-**Estado**: ⏳ Pendiente de autorización.
+**Estado**: ✅ Cerrada técnicamente.
 
-### Alcance esperado
+### Entregado
 
-- Code-splitting adicional para reducir bundle inicial < 500 KB.
-- Empty states, loaders y transitions consistentes en todas las páginas admin.
-- Verificación responsive mobile/tablet/desktop.
-- Pruebas manuales del flujo completo (login → selector → modos → CRUDs → exports).
-- Type check + lint final.
-- Eliminación de archivos huérfanos (`AdminLayout.tsx` viejo, `AdminSidebar.tsx` viejo).
+- **Bundle optimizado**: agregado `manualChunks` en `vite.config.ts` separando 6 vendors pesados (react, supabase, tanstack, forms, dates, icons). Bundle inicial (entry `index.js`) bajó de **653 kB → 247 kB** (gzip 189 → 71 kB). Sin warning de Vite por chunks > 500 kB.
+- **Archivos huérfanos eliminados**: `src/pages/admin/AdminLayout.tsx`, `src/components/admin/AdminSidebar.tsx`, `src/pages/admin/AdminDashboard.tsx` (los 3 confirmados sin imports activos antes de borrar).
+- **AdminUsuarios.tsx**: comentario interno actualizado (mencionaba `AdminLayout` que ya no existe).
+- **QA funcional**: 15 rutas pedidas verificadas en `App.tsx` + 10 redirects legacy intactos.
+- **QA roles**: guards verificados en `WebLayout`, `SistemaLayout`, `AdminSelector`, `Scanner`. Matriz de roles confirmada (admin → ambos paneles, editor → sólo Web, control_entradas → bypass scanner, sin rol → home).
+- **QA botones**: grep confirma sin handlers vacíos (`onClick={() => {}}`), sin botones decorativos sin acción, sin TODOs/FIXMEs en src.
+
+### Bundle final (gzip entre paréntesis)
+
+| Chunk | Tamaño | Cuándo se carga |
+|-------|--------|-----------------|
+| **`index` (entry)** | **246.69 kB** (71.48 kB) | Primer paint |
+| `vendor-react` | 157.33 kB (51.55 kB) | Primer paint (requerido por entry) |
+| `vendor-supabase` | 173.69 kB (45.84 kB) | Primera query Supabase |
+| `vendor-dates` | 62.74 kB (18.38 kB) | Cuando se importa date-fns/react-day-picker |
+| `vendor-icons` | 43.71 kB (9.99 kB) | Idem (compartido) |
+| `vendor-tanstack` | 27.44 kB (8.60 kB) | Provider del root |
+| `ChartCard` (recharts) | 374.19 kB (103.51 kB) | Sólo dashboards admin |
+| `jspdf` + `html2canvas` | ~560 kB combinados | Sólo al hacer export PDF |
+
+Primer paint útil del sitio público: ~404 kB (entry + vendor-react) = ~122 kB gzip. Antes de Fase 5 eran 653 kB / 189 kB gzip.
+
+### QA técnico final
+
+| Check | Resultado |
+|-------|-----------|
+| `npm run build` | ✅ Pasa en 2.88s |
+| `npm run lint` | ⚠️ 25 problemas (15 errors, 10 warnings) — **idéntico al baseline**. No introducimos lint nuevo. |
+| Archivos huérfanos | ✅ Eliminados los 3 confirmados |
+| Bundle inicial < 500 kB | ✅ 247 kB |
+| Sin handlers vacíos | ✅ |
+| Sin TODOs/FIXMEs | ✅ |
+
+### QA visual (limitación)
+
+Verificación técnica completa. **QA visual en browser real (responsive mobile/tablet/desktop, flujos completos de login → selector → CRUDs → exports → scanner)** requiere ejecución manual del usuario sobre el dev server. No se puede certificar desde código.
+
+### Pendientes que NO se resolvieron en Fase 5 (según autorización)
+
+- 🔴 **x-signature MercadoPago** — declarado como NO resuelve en esta fase, documentado.
+- 🟠 Selector visual `punto_acceso_id` en Scanner.
+- 🟠 `precio_modificador` calendario → `/comprar`.
+- ℹ️ `banner_click` / `slide_click` / `oferta_click` analytics — sin disparadores hasta que esos elementos estén en sitio público.
 
 ---
 

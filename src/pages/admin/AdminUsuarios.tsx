@@ -50,10 +50,9 @@ const emptyUserForm = {
 };
 
 export default function AdminUsuarios() {
-  // Guard solo-admin: AdminLayout permite admin + editor, pero esta sección
-  // operativamente sólo tiene sentido para admin (la edge function
-  // admin-create-user devuelve 403 a editores, y user_roles RLS sólo deja
-  // leer al admin → editor vería listados vacíos y errores silenciosos).
+  // Guard solo-admin: aunque esta página se monta bajo SistemaLayout (ya admin-only),
+  // dejamos un check explícito porque admin-create-user devuelve 403 a editores y
+  // user_roles RLS sólo deja leer al admin → defensa en profundidad.
   const { isAdmin, loading: roleLoading } = useUserRole();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
