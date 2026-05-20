@@ -1,150 +1,213 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Waves } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Waves, ArrowLeft, Loader2 } from "lucide-react";
+import { PinGate } from "@/components/login/PinGate";
+import { LoginPanels } from "@/components/login/LoginPanels";
+import {
+  resolveDestination,
+  type AppRole,
+  type LoginPanel,
+  isPinUnlockValid,
+  markPinUnlocked,
+  clearPinSession,
+  pinUnlockRemainingMs,
+} from "@/lib/access-control";
+
+// =============================================================================
+// /login — PIN gate (TTL 60s) + triple login + redirect por rol
+// =============================================================================
+// Flujo:
+//   1. Si hay sesión activa → redirigir a /admin/seleccionar (no pedir PIN).
+//   2. PinGate central — bloqueado hasta validar PIN.
+//   3. PIN OK → sessionStorage(infinito-pin-ok=true, infinito-pin-unlocked-at=now).
+//   4. Si pasan 60s sin login → re-lock automático y clear sessionStorage.
+//   5. Usuario elige uno de los 3 paneles (Ticketera, Web, Sistemas).
+//   6. signInWithPassword → query directa a user_roles (sin race condition).
+//   7. resolveDestination(panel, role) → URL o null si sin permiso.
+//   8. Sin permiso → signOut + mensaje específico en el panel elegido.
+// =============================================================================
+
+// Prioridad de roles (mayor a menor) — coherente con useUserRole.
+const ROLE_PRIORITY: readonly AppRole[] = ["admin", "editor", "control_entradas"];
+
+function highestRoleOf(roles: string[]): AppRole | null {
+  for (const role of ROLE_PRIORITY) {
+    if (roles.includes(role)) return role;
+  }
+  return null;
+}
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const [pinUnlocked, setPinUnlocked] = useState<boolean>(() => isPinUnlockValid());
+  const [sessionCheckDone, setSessionCheckDone] = useState(false);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  // Si ya hay sesión activa, no pedir PIN: enviamos al selector que decide ruta.
+  useEffect(() => {
+    let cancel = false;
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancel) return;
+      if (data.session) {
+        navigate("/admin/seleccionar", { replace: true });
+      } else {
+        setSessionCheckDone(true);
+      }
+    }).catch(() => { if (!cancel) setSessionCheckDone(true); });
+    return () => { cancel = true; };
+  }, [navigate]);
 
-    if (error) {
-      toast({ title: "Error al iniciar sesión", description: error.message, variant: "destructive" });
-      setLoading(false);
+  // Programar la expiración del PIN: si pasa el TTL sin login, re-lock.
+  useEffect(() => {
+    if (!pinUnlocked) return;
+    const remaining = pinUnlockRemainingMs();
+    if (remaining <= 0) {
+      clearPinSession();
+      setPinUnlocked(false);
       return;
     }
+    const t = setTimeout(() => {
+      clearPinSession();
+      setPinUnlocked(false);
+    }, remaining);
+    return () => clearTimeout(t);
+  }, [pinUnlocked]);
 
-    toast({ title: "¡Bienvenido!" });
-    // Mandamos al selector: AdminSelector decide a dónde ir según rol
-    // (admin/editor → cards, staff → scanner, sin rol → home).
-    navigate("/admin/seleccionar");
+  const handlePinUnlock = () => {
+    markPinUnlocked();
+    setPinUnlocked(true);
   };
 
+  // Estado por panel
+  const [tickLoading, setTickLoading] = useState(false);
+  const [tickError, setTickError]     = useState<string | null>(null);
+  const [webLoading, setWebLoading]   = useState(false);
+  const [webError, setWebError]       = useState<string | null>(null);
+  const [sistLoading, setSistLoading] = useState(false);
+  const [sistError, setSistError]     = useState<string | null>(null);
+
+  const handleLogin = async (panel: LoginPanel, email: string, password: string) => {
+    const { data: signIn, error: signInError } =
+      await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInError) throw new Error(signInError.message || "No se pudo iniciar sesión.");
+    const userId = signIn.user?.id;
+    if (!userId) throw new Error("Sesión inválida.");
+
+    // Query directa a user_roles (evita race con useUserRole).
+    const { data: rolesData, error: rolesError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+
+    if (rolesError) {
+      await supabase.auth.signOut();
+      throw new Error("No se pudieron verificar los permisos.");
+    }
+
+    const roleStrings = (rolesData ?? []).map((r) => r.role as string);
+    const role = highestRoleOf(roleStrings);
+
+    const destination = resolveDestination(panel, role);
+    if (!destination) {
+      await supabase.auth.signOut();
+      const label = panel === "web" ? "Panel Web" : panel === "ticketera" ? "Panel Ticketera" : "Panel Sistemas";
+      throw new Error(`No tenés permisos para acceder al ${label}.`);
+    }
+    return destination;
+  };
+
+  const wrap = (
+    panel: LoginPanel,
+    setLoading: (b: boolean) => void,
+    setError: (s: string | null) => void,
+  ) => async (email: string, password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const dest = await handleLogin(panel, email, password);
+      toast({ title: "¡Bienvenido!" });
+      navigate(dest);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Aún chequeando sesión existente: pantalla en blanco breve para evitar flash.
+  if (!sessionCheckDone) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-water-900" />
+    );
+  }
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-water-50 via-app-bg to-water-100 p-4">
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(ellipse at 20% 0%, hsl(204 100% 36% / 0.55), transparent 60%)," +
+          "radial-gradient(ellipse at 100% 60%, hsl(196 100% 43% / 0.35), transparent 55%)," +
+          "linear-gradient(160deg, hsl(220 90% 16%) 0%, hsl(226 54% 8%) 100%)",
+      }}
+    >
       {/* Decoración acuática */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-water-200/50 blur-3xl" />
-        <div className="absolute -right-32 top-1/4 h-96 w-96 rounded-full bg-water-300/40 blur-3xl" />
-        <div className="absolute -bottom-32 left-1/3 h-96 w-96 rounded-full bg-water-100/60 blur-3xl" />
+        <div className="absolute left-[-10%] top-[-15%] h-[40rem] w-[40rem] rounded-full bg-water-500/20 blur-3xl" />
+        <div className="absolute right-[-15%] top-1/3 h-[35rem] w-[35rem] rounded-full bg-emerald-500/15 blur-3xl" />
+        <div className="absolute bottom-[-20%] left-1/4 h-[40rem] w-[40rem] rounded-full bg-violet-700/25 blur-3xl" />
       </div>
 
-      {/* Card */}
-      <div className="relative z-10 w-full max-w-md">
-        <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/75 p-8 shadow-2xl shadow-water-500/20 backdrop-blur-xl">
-          {/* Glow interno */}
-          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-water-300 to-water-500 opacity-20 blur-2xl" />
+      {!pinUnlocked && (
+        <div className="pointer-events-none absolute inset-0 bg-water-900/30 backdrop-blur-[2px]" aria-hidden />
+      )}
 
-          <div className="relative">
-            {/* Botón inicio */}
-            <button
-              onClick={() => navigate("/")}
-              className="absolute -top-2 left-0 flex items-center gap-1.5 rounded-full border border-app-border bg-white/70 px-3 py-1.5 text-xs font-medium text-app-muted transition-colors hover:bg-water-50 hover:text-water-700"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" /> Inicio
-            </button>
-
-            {/* Logo + título */}
-            <div className="mb-8 flex flex-col items-center pt-6 text-center">
-              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-water-400 to-water-700 shadow-lg shadow-water-500/40">
-                <Waves className="h-8 w-8 text-white" />
-              </div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-water-600">
-                Infinito Water Park
-              </p>
-              <h1 className="text-2xl font-bold text-water-800">Iniciar sesión</h1>
-              <p className="mt-1 text-sm text-app-muted">Ingresá a tu cuenta para continuar</p>
-            </div>
-
-            {/* Formulario */}
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-xs font-medium text-water-700">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  placeholder="tu@email.com"
-                  className="h-11 rounded-xl border-app-border bg-white/80 focus-visible:ring-water-400"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-xs font-medium text-water-700">
-                  Contraseña
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    placeholder="••••••••"
-                    className="h-11 rounded-xl border-app-border bg-white/80 pr-10 focus-visible:ring-water-400"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-app-muted transition-colors hover:text-water-700"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="h-11 w-full rounded-xl bg-gradient-to-r from-water-500 to-water-700 text-base font-semibold text-white shadow-lg shadow-water-500/30 transition-transform hover:from-water-600 hover:to-water-800 active:scale-[0.98]"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Ingresando...
-                  </>
-                ) : (
-                  "Iniciar sesión"
-                )}
-              </Button>
-
-              <div className="space-y-2 pt-2 text-center text-sm">
-                <Link
-                  to="/reset-password"
-                  className="block font-medium text-water-600 transition-colors hover:text-water-800 hover:underline"
-                >
-                  ¿Olvidaste tu contraseña?
-                </Link>
-                <p className="text-app-muted">
-                  ¿No tenés cuenta?{" "}
-                  <Link to="/registro" className="font-medium text-water-600 hover:text-water-800 hover:underline">
-                    Registrate
-                  </Link>
-                </p>
-              </div>
-            </form>
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-10">
+        {/* Header */}
+        <header className="relative mb-8 flex flex-col items-center text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md ring-1 ring-white/20">
+            <Waves className="h-5 w-5 text-white" />
           </div>
+          <p className="text-xs font-bold uppercase tracking-[0.4em] text-white/90">Infinito</p>
+          <p className="text-[10px] font-medium tracking-[0.5em] text-water-200/70">WATER PARK</p>
+          <h1 className="mt-5 text-xl font-semibold text-white sm:text-2xl">Acceso Administrativo</h1>
+          <p className="mt-1 text-sm text-water-200/70">
+            Seleccioná el área a la que deseas ingresar
+          </p>
+        </header>
+
+        {/* Triple panel + PIN gate overlapped */}
+        <div className="relative flex w-full max-w-6xl items-center justify-center">
+          <LoginPanels
+            locked={!pinUnlocked}
+            ticketera={{ loading: tickLoading, error: tickError }}
+            web={{ loading: webLoading, error: webError }}
+            sistemas={{ loading: sistLoading, error: sistError }}
+            onTicketeraSubmit={wrap("ticketera", setTickLoading, setTickError)}
+            onWebSubmit={wrap("web", setWebLoading, setWebError)}
+            onSistemasSubmit={wrap("sistemas", setSistLoading, setSistError)}
+          />
+
+          {!pinUnlocked && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center">
+              <PinGate onUnlock={handlePinUnlock} />
+            </div>
+          )}
         </div>
+
+        <div className="mt-8 max-w-2xl rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-center backdrop-blur-md">
+          <p className="text-xs text-water-100/70">
+            Si tenés problemas para acceder, contactá al administrador del sistema. Tu acceso está protegido con encriptación de extremo a extremo.
+          </p>
+        </div>
+
+        <p className="mt-6 text-[11px] text-water-200/40">
+          Infinito Water Park © {new Date().getFullYear()}
+        </p>
       </div>
     </div>
   );

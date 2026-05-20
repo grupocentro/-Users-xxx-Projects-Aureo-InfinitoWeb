@@ -1,8 +1,30 @@
 # PHASE_STATUS.md — Estado de fases del proyecto
 
-> Última actualización: 2026-05-20 (post-Fase 5)
+> Última actualización: 2026-05-20 (post-Fase 5 + triple login con PIN gate)
 
-Este documento registra el estado real de cada fase del proyecto **Reorganización Admin Dual Mode** de Infinito Water Park.
+Este documento registra el estado real de cada fase del proyecto **Reorganización Admin Dual Mode** de Infinito Water Park (ahora **triple mode** tras la incorporación de Panel Sistemas).
+
+## Cambios post-Fase 5 (out-of-cycle)
+
+Después de cerrar Fase 5 se incorporaron dos features adicionales por autorización del usuario:
+
+### Triple login con PIN gate (2026-05-20)
+- `/login` rediseñado con PIN obligatorio previo y **expiración 60 segundos** sin login exitoso.
+- Tres paneles visuales (Ticketera azul · Web turquesa · Sistemas violeta) en vez de dos.
+- Listener `supabase.auth.onAuthStateChange` instalado en `main.tsx` que limpia el PIN al detectar `SIGNED_OUT`.
+- Si el usuario llega a `/login` con sesión activa, redirige automáticamente a `/admin/seleccionar` sin pedir PIN.
+
+### Renombre `/admin/sistema` → `/admin/ticketera`
+- Por coherencia con el doble nombre "Sistemas" vs "Sistema": el panel financiero/operativo pasa a llamarse **Ticketera**.
+- Archivos renombrados: `src/pages/admin/sistema/` → `ticketera/` (carpeta), `SistemaLayout.tsx` → `TicketeraLayout.tsx`, `SistemaDashboard.tsx` → `TicketeraDashboard.tsx`, `AdminSidebarSistema.tsx` → `AdminSidebarTicketera.tsx`.
+- 7 redirects legacy nuevos: `/admin/sistema*` → `/admin/ticketera*`.
+
+### Nuevo Panel Sistemas
+- Ruta `/admin/sistemas` (plural) — admin-only.
+- Layout `SistemasLayout.tsx`, dashboard `SistemasDashboard.tsx` con 6 módulos placeholder (Usuarios, Roles, Personal, Administración, Seguridad, Configuración).
+- Sidebar dedicado `AdminSidebarSistemas.tsx` con tema violeta/índigo.
+- Sin CRUDs reales todavía (decisión explícita del usuario para esta fase).
+- `useAdminMode` extendido a `"web" | "ticketera" | "sistemas"` con normalización legacy `"sistema"` → `"ticketera"`.
 
 ## Vista general
 

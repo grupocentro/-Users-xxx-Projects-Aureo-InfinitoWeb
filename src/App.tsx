@@ -19,11 +19,13 @@ const CompraExitosa    = lazy(() => import("./pages/CompraExitosa"));
 const MiCuenta         = lazy(() => import("./pages/MiCuenta"));
 
 // Admin
-const AdminSelector    = lazy(() => import("./pages/admin/AdminSelector"));
-const WebLayout        = lazy(() => import("./pages/admin/web/WebLayout"));
-const SistemaLayout    = lazy(() => import("./pages/admin/sistema/SistemaLayout"));
-const WebDashboard     = lazy(() => import("./pages/admin/web/WebDashboard"));
-const SistemaDashboard = lazy(() => import("./pages/admin/sistema/SistemaDashboard"));
+const AdminSelector       = lazy(() => import("./pages/admin/AdminSelector"));
+const WebLayout           = lazy(() => import("./pages/admin/web/WebLayout"));
+const TicketeraLayout     = lazy(() => import("./pages/admin/ticketera/TicketeraLayout"));
+const SistemasLayout      = lazy(() => import("./pages/admin/sistemas/SistemasLayout"));
+const WebDashboard        = lazy(() => import("./pages/admin/web/WebDashboard"));
+const TicketeraDashboard  = lazy(() => import("./pages/admin/ticketera/TicketeraDashboard"));
+const SistemasDashboard   = lazy(() => import("./pages/admin/sistemas/SistemasDashboard"));
 const AdminEventos     = lazy(() => import("./pages/admin/AdminEventos"));
 const AdminAtracciones = lazy(() => import("./pages/admin/AdminAtracciones"));
 const AdminSlides      = lazy(() => import("./pages/admin/AdminSlides"));
@@ -37,8 +39,8 @@ const Noticias         = lazy(() => import("./pages/admin/web/Noticias"));
 const Ofertas          = lazy(() => import("./pages/admin/web/Ofertas"));
 const Calendario       = lazy(() => import("./pages/admin/web/Calendario"));
 const Analytics        = lazy(() => import("./pages/admin/web/Analytics"));
-const Validaciones     = lazy(() => import("./pages/admin/sistema/Validaciones"));
-const Reportes         = lazy(() => import("./pages/admin/sistema/Reportes"));
+const Validaciones     = lazy(() => import("./pages/admin/ticketera/Validaciones"));
+const Reportes         = lazy(() => import("./pages/admin/ticketera/Reportes"));
 
 // Staff
 const Scanner          = lazy(() => import("./pages/staff/Scanner"));
@@ -97,9 +99,9 @@ const App = () => (
               <Route path="actividades" element={<AdminActividades />} />
             </Route>
 
-            {/* Admin Modo Sistema */}
-            <Route path="/admin/sistema" element={<SistemaLayout />}>
-              <Route index element={<SistemaDashboard />} />
+            {/* Admin Modo Ticketera (antes "sistema") */}
+            <Route path="/admin/ticketera" element={<TicketeraLayout />}>
+              <Route index element={<TicketeraDashboard />} />
               <Route path="ventas" element={<AdminVentas />} />
               <Route path="tickets" element={<AdminTickets />} />
               <Route path="entradas" element={<AdminEntradas />} />
@@ -108,17 +110,39 @@ const App = () => (
               <Route path="usuarios" element={<AdminUsuarios />} />
             </Route>
 
+            {/* Admin Modo Sistemas (administración interna) */}
+            <Route path="/admin/sistemas" element={<SistemasLayout />}>
+              <Route index element={<SistemasDashboard />} />
+              {/* Sub-rutas placeholder: renderean el mismo dashboard hasta que se implementen */}
+              <Route path="usuarios"       element={<SistemasDashboard />} />
+              <Route path="roles"          element={<SistemasDashboard />} />
+              <Route path="personal"       element={<SistemasDashboard />} />
+              <Route path="administracion" element={<SistemasDashboard />} />
+              <Route path="seguridad"      element={<SistemasDashboard />} />
+              <Route path="configuracion"  element={<SistemasDashboard />} />
+            </Route>
+
             {/* Rutas legacy → redirect a estructura nueva */}
             <Route path="/admin" element={<Navigate to="/admin/seleccionar" replace />} />
-            <Route path="/admin/eventos" element={<Navigate to="/admin/web/eventos" replace />} />
+            {/* Web (sin cambios desde Fase 1) */}
+            <Route path="/admin/eventos"     element={<Navigate to="/admin/web/eventos" replace />} />
             <Route path="/admin/atracciones" element={<Navigate to="/admin/web/atracciones" replace />} />
             <Route path="/admin/actividades" element={<Navigate to="/admin/web/actividades" replace />} />
-            <Route path="/admin/slides" element={<Navigate to="/admin/web/slides" replace />} />
-            <Route path="/admin/contenido" element={<Navigate to="/admin/web/contenido" replace />} />
-            <Route path="/admin/ventas" element={<Navigate to="/admin/sistema/ventas" replace />} />
-            <Route path="/admin/tickets" element={<Navigate to="/admin/sistema/tickets" replace />} />
-            <Route path="/admin/entradas" element={<Navigate to="/admin/sistema/entradas" replace />} />
-            <Route path="/admin/usuarios" element={<Navigate to="/admin/sistema/usuarios" replace />} />
+            <Route path="/admin/slides"      element={<Navigate to="/admin/web/slides" replace />} />
+            <Route path="/admin/contenido"   element={<Navigate to="/admin/web/contenido" replace />} />
+            {/* Ticketera — rutas legacy directas (Fase 1) */}
+            <Route path="/admin/ventas"      element={<Navigate to="/admin/ticketera/ventas" replace />} />
+            <Route path="/admin/tickets"     element={<Navigate to="/admin/ticketera/tickets" replace />} />
+            <Route path="/admin/entradas"    element={<Navigate to="/admin/ticketera/entradas" replace />} />
+            <Route path="/admin/usuarios"    element={<Navigate to="/admin/ticketera/usuarios" replace />} />
+            {/* Ticketera — rutas legacy del nombre antiguo "/admin/sistema/*" */}
+            <Route path="/admin/sistema"                element={<Navigate to="/admin/ticketera" replace />} />
+            <Route path="/admin/sistema/ventas"         element={<Navigate to="/admin/ticketera/ventas" replace />} />
+            <Route path="/admin/sistema/tickets"        element={<Navigate to="/admin/ticketera/tickets" replace />} />
+            <Route path="/admin/sistema/entradas"       element={<Navigate to="/admin/ticketera/entradas" replace />} />
+            <Route path="/admin/sistema/validaciones"   element={<Navigate to="/admin/ticketera/validaciones" replace />} />
+            <Route path="/admin/sistema/reportes"       element={<Navigate to="/admin/ticketera/reportes" replace />} />
+            <Route path="/admin/sistema/usuarios"       element={<Navigate to="/admin/ticketera/usuarios" replace />} />
 
             {/* Scanner (no cambia) */}
             <Route path="/staff/scanner" element={<Scanner />} />

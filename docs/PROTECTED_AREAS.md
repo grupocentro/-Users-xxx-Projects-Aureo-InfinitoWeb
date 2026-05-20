@@ -81,15 +81,24 @@ Las siguientes redirecciones deben mantenerse funcionando:
 
 ```
 /admin                  → /admin/seleccionar
-/admin/eventos          → /admin/web/eventos
-/admin/atracciones      → /admin/web/atracciones
-/admin/actividades      → /admin/web/actividades
-/admin/slides           → /admin/web/slides
-/admin/contenido        → /admin/web/contenido
-/admin/ventas           → /admin/sistema/ventas
-/admin/tickets          → /admin/sistema/tickets
-/admin/entradas         → /admin/sistema/entradas
-/admin/usuarios         → /admin/sistema/usuarios
+/admin/eventos              → /admin/web/eventos
+/admin/atracciones          → /admin/web/atracciones
+/admin/actividades          → /admin/web/actividades
+/admin/slides               → /admin/web/slides
+/admin/contenido            → /admin/web/contenido
+/admin/ventas               → /admin/ticketera/ventas
+/admin/tickets              → /admin/ticketera/tickets
+/admin/entradas             → /admin/ticketera/entradas
+/admin/usuarios             → /admin/ticketera/usuarios
+
+# Legacy del nombre antiguo "/admin/sistema" (post rename a Ticketera)
+/admin/sistema              → /admin/ticketera
+/admin/sistema/ventas       → /admin/ticketera/ventas
+/admin/sistema/tickets      → /admin/ticketera/tickets
+/admin/sistema/entradas     → /admin/ticketera/entradas
+/admin/sistema/validaciones → /admin/ticketera/validaciones
+/admin/sistema/reportes     → /admin/ticketera/reportes
+/admin/sistema/usuarios     → /admin/ticketera/usuarios
 ```
 
 **No remover ni alterar** sin autorización explícita. Externals pueden tener bookmarks o links a las rutas viejas.

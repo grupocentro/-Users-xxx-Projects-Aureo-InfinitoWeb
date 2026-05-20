@@ -15,7 +15,7 @@ Sistema de 3 roles + 1 superadmin del proyecto Infinito Water Park.
 
 - Trigger `handle_new_user()` en `auth.users` crea automáticamente `profiles` para todo nuevo usuario.
 - Si el email es `davidcorreosl@gmail.com`, el trigger también inserta `user_roles(user_id, role='admin')`.
-- Otros roles se asignan manualmente desde `/admin/sistema/usuarios` (admin-only) usando la edge function `admin-create-user` o el panel de gestión.
+- Otros roles se asignan manualmente desde `/admin/ticketera/usuarios` (admin-only) usando la edge function `admin-create-user` o el panel de gestión.
 
 ## Matriz de acceso por ruta
 
@@ -27,8 +27,10 @@ Sistema de 3 roles + 1 superadmin del proyecto Infinito Water Park.
 | `/mi-cuenta` | ✅ | ✅ | ✅ | ✅ (sólo propio) | ❌ |
 | `/admin/seleccionar` | ✅ | ✅ | ↪ bypass `/staff/scanner` | ↪ `/` | ❌ |
 | `/admin/web/*` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `/admin/sistema/*` | ✅ | ❌ ↪ selector | ❌ | ❌ | ❌ |
+| `/admin/ticketera/*` | ✅ | ❌ ↪ selector | ❌ | ❌ | ❌ |
+| `/admin/sistemas/*` | ✅ | ❌ ↪ selector | ❌ | ❌ | ❌ |
 | `/staff/scanner` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `/admin/sistema/*` (legacy) | ↪ `/admin/ticketera/*` | ↪ idem | ↪ idem | ↪ idem | ↪ idem |
 
 Leyenda: ✅ acceso, ❌ denegado, ↪ redirect.
 
@@ -43,13 +45,16 @@ Leyenda: ✅ acceso, ❌ denegado, ↪ redirect.
 | CRUD noticias / ofertas / calendario | ✅ | ✅ | ❌ |
 | Ver dashboard Web (counts de contenido) | ✅ | ✅ | ❌ |
 | Ver analytics web (futuro Fase 4) | ✅ | ✅ | ❌ |
-| **PANEL TICKETERA / SISTEMA** | | | |
-| Ver SistemaDashboard (KPIs financieros) | ✅ | ❌ | ❌ |
+| **PANEL TICKETERA** | | | |
+| Ver TicketeraDashboard (KPIs financieros) | ✅ | ❌ | ❌ |
 | Ver ventas / compras (todos los estados) | ✅ | ❌ | ❌ |
 | Ver tickets QR (emitidos / usados) | ✅ | ❌ | ❌ |
 | Ver historial de validaciones | ✅ | ❌ | ❌ |
 | Ver reportes operativos + exports | ✅ | ❌ | ❌ |
 | CRUD tipos de entrada / precios | ✅ | ❌ | ❌ |
+| **PANEL SISTEMAS (admin-only)** | | | |
+| Ver SistemasDashboard (placeholders) | ✅ | ❌ | ❌ |
+| Acceder a módulos Usuarios/Roles/Personal/Administración/Seguridad/Configuración | ✅ | ❌ | ❌ |
 | **OPERATIVO** | | | |
 | Escanear QR | ✅ | ❌ | ✅ |
 | Validar entradas (RPC validar_qr) | ✅ | ❌ | ✅ |
@@ -98,7 +103,7 @@ if (!isAdminRow) return new Response("Forbidden", { status: 403 });
 
 ## Gestión de roles desde el panel
 
-- **Crear usuario**: solo desde `/admin/sistema/usuarios` (admin-only). Llama a edge function `admin-create-user` que usa `service_role` server-side.
+- **Crear usuario**: solo desde `/admin/ticketera/usuarios` (admin-only). Llama a edge function `admin-create-user` que usa `service_role` server-side.
 - **Asignar rol**: misma página, dropdown de roles.
 - **Cambiar rol**: requiere ser admin. No se puede cambiar el rol propio si sos el único admin (guard pendiente para Fase 5).
 

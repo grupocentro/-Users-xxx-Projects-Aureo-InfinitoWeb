@@ -43,7 +43,13 @@
       "Bash(awk '{print $9, $5}')",
       "Bash(awk '{print $0}')",
       "Bash(awk '{print $5, $9}')",
-      "Bash(grep -B1 -A3 \"isAdmin\\\\|isStaff\\\\|isAdminOrEditor\\\\|navigate.*\\\\\\(login\\\\|/$\\\\|seleccionar\\\\|staff/scanner\\\\\\)\" /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/admin/web/WebLayout.tsx /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/admin/sistema/SistemaLayout.tsx /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/admin/AdminSelector.tsx /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/staff/Scanner.tsx)"
+      "Bash(grep -B1 -A3 \"isAdmin\\\\|isStaff\\\\|isAdminOrEditor\\\\|navigate.*\\\\\\(login\\\\|/$\\\\|seleccionar\\\\|staff/scanner\\\\\\)\" /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/admin/web/WebLayout.tsx /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/admin/sistema/SistemaLayout.tsx /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/admin/AdminSelector.tsx /Users/xxx/Projects/Aureo/InfinitoWeb/src/pages/staff/Scanner.tsx)",
+      "Bash(curl -s -o /dev/null -w \"HTTP=%{http_code} TIME=%{time_total}s SIZE=%{size_download}b\\\\n\" http://localhost:8080/)",
+      "Bash(node --check /Users/xxx/Projects/Aureo/InfinitoWeb/scripts/setup-users.mjs)",
+      "Bash(shasum -a 256)",
+      "Bash(awk '{print $1}')",
+      "Bash(awk '{print $5}')",
+      "Bash(git mv *)"
     ],
     "additionalDirectories": [
       "/Users/xxx/.claude/projects/-Users-xxx-Projects-Aureo-InfinitoWeb",

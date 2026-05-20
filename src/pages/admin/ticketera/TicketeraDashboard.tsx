@@ -64,7 +64,7 @@ function rangeInclusive(range: DateRange): { fromIso: string; toIso: string } {
 
 function isoDay(s: string): string { return s.slice(0, 10); }
 
-export default function SistemaDashboard() {
+export default function TicketeraDashboard() {
   const [range, setRange] = useState<DateRange>(() => presetRange("7d"));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
