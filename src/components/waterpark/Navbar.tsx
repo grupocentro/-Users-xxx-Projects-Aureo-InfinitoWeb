@@ -126,14 +126,14 @@ export default function Navbar() {
               ) : (
                 <>
                   <button
-                    onClick={() => navigate("/login")}
+                    onClick={() => navigate("/cliente/login")}
                     className="ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 hover:bg-blue-50 flex items-center gap-1.5"
                     style={{ color: scrolled ? "hsl(var(--water-700))" : "rgba(255,255,255,0.85)" }}
                   >
                     <LogIn className="w-4 h-4" /> Iniciar sesión
                   </button>
                   <button
-                    onClick={() => navigate("/registro")}
+                    onClick={() => navigate("/cliente/registro")}
                     className="ml-1 px-5 py-2 rounded-xl text-sm font-black text-white transition-all hover:scale-105 hover:brightness-110"
                     style={{
                       background: "linear-gradient(135deg, hsl(var(--water-600)), hsl(var(--water-400)))",
@@ -255,7 +255,7 @@ export default function Navbar() {
             {!authLoading && !user && (
               <>
                 <button
-                  onClick={() => handlePageLink("/login")}
+                  onClick={() => handlePageLink("/cliente/login")}
                   className="flex items-center gap-2 w-full text-left px-4 py-3.5 rounded-2xl font-bold text-base transition-all duration-200 hover:bg-blue-50"
                   style={{
                     color: "hsl(var(--water-800))",
@@ -266,7 +266,7 @@ export default function Navbar() {
                   <LogIn className="w-5 h-5" /> Iniciar sesión
                 </button>
                 <button
-                  onClick={() => handlePageLink("/registro")}
+                  onClick={() => handlePageLink("/cliente/registro")}
                   className="flex items-center gap-2 w-full text-left px-4 py-3.5 rounded-2xl font-bold text-base transition-all duration-200 hover:bg-blue-50"
                   style={{
                     color: "hsl(var(--water-600))",
