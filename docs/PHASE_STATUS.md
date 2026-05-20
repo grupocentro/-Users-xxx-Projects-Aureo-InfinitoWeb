@@ -1,6 +1,6 @@
 # PHASE_STATUS.md — Estado de fases del proyecto
 
-> Última actualización: 2026-05-20 (post-Fase 3)
+> Última actualización: 2026-05-20 (post-Fase 4)
 
 Este documento registra el estado real de cada fase del proyecto **Reorganización Admin Dual Mode** de Infinito Water Park.
 
@@ -12,7 +12,7 @@ Este documento registra el estado real de cada fase del proyecto **Reorganizaci�
 | 1 | Selector premium + dual layout | ✅ Cerrada | 2026-05-20 |
 | 2 | Modo Sistema completo | ✅ Cerrada | 2026-05-20 |
 | 3 | Modo Web: CRUDs nuevos | ✅ Cerrada | 2026-05-20 |
-| 4 | Web Analytics | ⏳ Pendiente de autorización | — |
+| 4 | Web Analytics | ✅ Cerrada | 2026-05-20 |
 | 5 | QA final + polish | ⏳ Pendiente de autorización | — |
 
 > El estado de "cerrada" refleja la realidad técnica (build verde y código mergeado). La aprobación operativa final (deploy producción + QA en runtime) es una etapa posterior independiente.
@@ -123,21 +123,46 @@ Este documento registra el estado real de cada fase del proyecto **Reorganizaci�
 
 ## Fase 4 — Web Analytics
 
-**Estado**: ⏳ Pendiente de autorización.
+**Estado**: ✅ Cerrada técnicamente.
 
-### Alcance esperado
+### Entregado
 
-- Helper `src/lib/analytics.ts` con `trackEvent(type, payload)`.
-- Instrumentación de páginas públicas (`Index`, `Comprar`, `Eventos`, Hero CTAs, etc).
-- Nueva página `src/pages/admin/web/Analytics.tsx` con KPIs visitas, top páginas, top botones, mobile vs desktop.
-- Detección de dispositivo y origen en cliente.
-- Session ID anónimo (UUID v4) con expiración 30min en localStorage.
+- 2 archivos nuevos:
+  - `src/lib/analytics.ts` — helper privacy-first con `trackEvent`, `fireAndForget`. Sesión anónima UUID v4 en localStorage con expiración por 30min de inactividad. Detección device/browser/referrer. INSERT silent-fail con try/catch a `web_analytics_events`. NO se envía email, nombre, teléfono, IP ni user_id.
+  - `src/pages/admin/web/Analytics.tsx` — dashboard con 9 KPIs, 4 gráficos (visitas por día, device pie, top páginas barras horizontales, ranking implícito en tablas), 4 tablas (top páginas, top botones, origen del tráfico, actividad reciente últimos 50). Filtro DateRange (hoy/7d/30d/mes/custom).
+- 9 archivos modificados:
+  - Páginas instrumentadas: `Index.tsx`, `Eventos.tsx`, `Comprar.tsx` (page_view).
+  - Componentes instrumentados: `WhatsAppButton.tsx`, `Footer.tsx`, `MapaSection.tsx`, `EntradasSection.tsx`, `ProximosEventos.tsx`.
+  - Navegación: `App.tsx`, `AdminSidebarWeb.tsx`, `WebDashboard.tsx`.
 
-### Pre-requisitos
+### Eventos disparándose en producción
 
-- ✅ Tabla `web_analytics_events` ya creada (Fase 0).
-- ✅ Trigger de sanitización PII activo (Fase 0).
-- ✅ RLS configurada (INSERT público, SELECT admin/editor).
+| Tipo | Disparadores actuales |
+|------|-----------------------|
+| `page_view` | Index · Eventos · Comprar (mount) |
+| `whatsapp_click` | WhatsAppButton flotante · Footer phone link |
+| `contacto_click` | Footer CTA "Escribinos" |
+| `mapa_click` | MapaSection info card · MapaSection CTA principal |
+| `comprar_entrada_click` | EntradasSection mobile · EntradasSection desktop · EventDetailSheet "Comprar" |
+| `evento_click` | EventCard de ProximosEventos |
+
+### Bundle (post-Fase 4)
+
+- Bundle inicial: **653.42 kB** (gzip 189.72 kB) — +2.8 kB vs Fase 3 (helper analytics minúsculo, casi todo lazy).
+- Analytics page lazy: **13.88 kB**.
+
+### Decisiones tomadas
+
+- Sesiones únicas se calculan en cliente como `new Set(session_id)` sobre los eventos del período (límite 5000).
+- Origen del tráfico se agrupa en cliente (Directo / Interno / Google / Instagram / Facebook / Twitter/X / Otros) para legibilidad.
+- Si tracking falla por cualquier razón → `console.warn` y la UX sigue normal.
+- `trackEvent` retorna `Promise<void>` que **nunca throws** (silent fail garantizado).
+
+### Pendientes menores conocidos
+
+- ℹ️ `banner_click` / `slide_click` / `oferta_click` están en el type union de eventos pero no tienen disparadores aún. Se activarán cuando los hero slides y ofertas se rendericen en el sitio público (hoy sólo existen en admin).
+- ℹ️ `button_click` genérico disponible vía helper pero sin disparadores explícitos en el sitio público todavía.
+- ℹ️ Para volúmenes > 5000 eventos en un período, el dashboard muestra una nota al pie. Mitigación futura: paginar o usar agregaciones server-side.
 
 ---
 
@@ -164,6 +189,7 @@ Este documento registra el estado real de cada fase del proyecto **Reorganizaci�
 ### 🟠 Pendientes menores
 - **Selector visual de `punto_acceso_id` en Scanner**: la RPC `validar_qr(text, jsonb)` y el frontend ya soportan metadata extra. Falta UI en `Scanner.tsx` para que el operador seleccione el punto antes de escanear. Sin esto, las validaciones registran `punto_acceso_id: null` en `qr_validaciones.metadata`.
 - **`precio_modificador` del calendario sin conectar a `/comprar`**: el campo se persiste en la tabla `calendario` (Fase 0 + CRUD Fase 3) pero el flujo de compra no lo lee. Conectarlo requiere ajustar `Comprar.tsx` y posiblemente la función SQL `calcular_total_compra()`. Pendiente de definición de fase.
+- **Eventos analytics sin disparadores aún** (`banner_click`, `slide_click`, `oferta_click`): tipos declarados en `analytics.ts` y soportados por el dashboard, pero los elementos correspondientes aún no se renderizan en el sitio público. Instrumentar cuando se conecten al home/landing.
 
 ### ℹ️ Informativos
 - Vulnerabilidad transitiva `dompurify` (XSS, moderate) vía jspdf. No nos afecta (sólo usamos `autoTable` con datos tabulares, sin HTML embebido). Mitigable con upgrade a `jspdf@4.x` cuando sea estable.

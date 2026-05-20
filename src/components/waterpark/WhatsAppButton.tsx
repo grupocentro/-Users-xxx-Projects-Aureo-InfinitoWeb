@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fireAndForget } from "@/lib/analytics";
 
 const WA_URL =
   "https://api.whatsapp.com/send?phone=543512041301&text=Hola!%20Quiero%20info%20sobre%20Infinito%20Water%20Park";
@@ -29,6 +30,7 @@ export default function WhatsAppButton() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Contactar por WhatsApp"
+        onClick={() => fireAndForget("whatsapp_click", { element_label: "Floating button" })}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         className="relative flex items-center justify-center rounded-full transition-transform duration-300"

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Minus, Plus, ShoppingCart, ArrowLeft, Loader2, Calendar } from "lucide-react";
 import CalendarioEntradas from "@/components/comprar/CalendarioEntradas";
+import { trackEvent } from "@/lib/analytics";
 
 type TipoEntrada = {
   id: string;
@@ -38,6 +39,11 @@ export default function Comprar() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  // Tracking de page view (analytics) — silent fail, no bloquea UX.
+  useEffect(() => {
+    void trackEvent("page_view");
+  }, []);
 
   const isDirectEvento = searchParams.get("entrada") === "evento" && !!searchParams.get("evento_id");
   const directEventoId = searchParams.get("evento_id");

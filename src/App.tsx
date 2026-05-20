@@ -36,6 +36,7 @@ const AdminTickets     = lazy(() => import("./pages/admin/AdminTickets"));
 const Noticias         = lazy(() => import("./pages/admin/web/Noticias"));
 const Ofertas          = lazy(() => import("./pages/admin/web/Ofertas"));
 const Calendario       = lazy(() => import("./pages/admin/web/Calendario"));
+const Analytics        = lazy(() => import("./pages/admin/web/Analytics"));
 const Validaciones     = lazy(() => import("./pages/admin/sistema/Validaciones"));
 const Reportes         = lazy(() => import("./pages/admin/sistema/Reportes"));
 
@@ -85,6 +86,7 @@ const App = () => (
             {/* Admin Modo Web */}
             <Route path="/admin/web" element={<WebLayout />}>
               <Route index element={<WebDashboard />} />
+              <Route path="analytics" element={<Analytics />} />
               <Route path="contenido" element={<AdminContenido />} />
               <Route path="slides" element={<AdminSlides />} />
               <Route path="noticias" element={<Noticias />} />

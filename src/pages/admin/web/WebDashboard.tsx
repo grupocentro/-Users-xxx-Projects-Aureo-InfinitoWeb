@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Calendar, Droplets, Sparkles, Newspaper, Tag, ImageIcon, FileText, CalendarDays,
-  ArrowRight,
+  ArrowRight, LineChart,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -137,7 +137,14 @@ export default function WebDashboard() {
       <div>
         <h1 className="text-3xl font-bold text-water-800">Panel Web</h1>
         <p className="mt-1 text-sm text-app-muted">
-          Resumen del contenido público del sitio. Las métricas de visitas se habilitarán en la próxima fase.
+          Resumen del contenido público del sitio. Las métricas de visitas están disponibles en{" "}
+          <button
+            onClick={() => navigate("/admin/web/analytics")}
+            className="font-medium text-water-600 underline-offset-2 hover:underline"
+          >
+            Analytics
+          </button>
+          .
         </p>
       </div>
 
@@ -222,6 +229,7 @@ export default function WebDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-2">
+              <QuickAction icon={LineChart}    label="Ver Analytics"      onClick={() => navigate("/admin/web/analytics")} />
               <QuickAction icon={Newspaper}    label="Editar noticias"    onClick={() => navigate("/admin/web/noticias")} />
               <QuickAction icon={Tag}          label="Editar ofertas"     onClick={() => navigate("/admin/web/ofertas")} />
               <QuickAction icon={Calendar}     label="Editar eventos"     onClick={() => navigate("/admin/web/eventos")} />

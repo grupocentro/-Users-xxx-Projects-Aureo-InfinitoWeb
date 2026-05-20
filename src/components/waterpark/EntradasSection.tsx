@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, ChevronRight, Zap, Shield, Clock, ShoppingCart, Sparkles, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import entradasBg from "@/assets/entradas-bg.png";
+import { fireAndForget } from "@/lib/analytics";
 
 type TipoEntrada = {
   id: string;
@@ -374,7 +375,7 @@ export default function EntradasSection() {
 
                 {/* CTA */}
                 <button
-                  onClick={() => navigate("/comprar")}
+                  onClick={() => { fireAndForget("comprar_entrada_click", { element_label: "Entradas mobile CTA" }); navigate("/comprar"); }}
                   className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-black text-sm transition-all active:scale-95 cursor-pointer"
                   style={{
                     background: "linear-gradient(135deg, hsl(var(--water-700)), hsl(var(--water-800)))",
@@ -409,7 +410,7 @@ export default function EntradasSection() {
         <div className="hidden lg:block" style={{ opacity: visible ? 1 : 0, transform: visible ? "none" : "translateY(20px)", transition: "all 0.8s ease 0.2s" }}>
           <TicketCardDesktop
             allFeatures={allFeatures}
-            onBuy={() => navigate("/comprar")}
+            onBuy={() => { fireAndForget("comprar_entrada_click", { element_label: "Entradas desktop CTA" }); navigate("/comprar"); }}
             hovered={hovered}
             setHovered={setHovered}
           />

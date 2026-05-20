@@ -40,7 +40,9 @@
       "Bash(git add *)",
       "Bash(grep -E \"^\\\\.env$|node_modules|^dist/|\\\\.local$\")",
       "Bash(git commit *)",
-      "Bash(awk '{print $9, $5}')"
+      "Bash(awk '{print $9, $5}')",
+      "Bash(awk '{print $0}')",
+      "Bash(awk '{print $5, $9}')"
     ],
     "additionalDirectories": [
       "/Users/xxx/.claude/projects/-Users-xxx-Projects-Aureo-InfinitoWeb",

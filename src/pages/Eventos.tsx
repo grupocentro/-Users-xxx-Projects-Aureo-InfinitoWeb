@@ -16,6 +16,7 @@ import {
   Calendar, Clock, MapPin, ShoppingCart, X, Ticket,
   Sparkles, ArrowRight,
 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 type Evento = {
   id: string;
@@ -392,6 +393,10 @@ export default function Eventos() {
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setHeaderVisible(true); }, { threshold: 0.1 });
     if (headerRef.current) obs.observe(headerRef.current);
     return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    void trackEvent("page_view");
   }, []);
 
   useEffect(() => {

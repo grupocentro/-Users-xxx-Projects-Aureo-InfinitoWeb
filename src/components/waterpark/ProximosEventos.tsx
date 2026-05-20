@@ -9,6 +9,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { fireAndForget } from "@/lib/analytics";
 
 type Evento = {
   id: string;
@@ -135,6 +136,11 @@ function EventDetailSheet({ event, open, onClose }: { event: Evento | null; open
   if (!event) return null;
 
   const handleComprar = () => {
+    fireAndForget("comprar_entrada_click", {
+      element_label: `Evento: ${event.nombre}`,
+      element_id: event.id,
+      metadata: { source: "evento_detail_sheet" },
+    });
     if (!user) {
       toast({ title: "Iniciá sesión", description: "Necesitás una cuenta para comprar accesos.", variant: "destructive" });
       navigate("/login");
@@ -357,7 +363,15 @@ export default function ProximosEventos() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {eventos.map((event, i) => (
-              <EventCard key={event.id} event={event} index={i} onClick={() => setSelectedEvent(event)} />
+              <EventCard
+                key={event.id}
+                event={event}
+                index={i}
+                onClick={() => {
+                  fireAndForget("evento_click", { element_label: event.nombre, element_id: event.id });
+                  setSelectedEvent(event);
+                }}
+              />
             ))}
           </div>
 

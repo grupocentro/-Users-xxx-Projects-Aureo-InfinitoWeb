@@ -10,6 +10,7 @@ import {
   Sparkles,
   LogOut,
   Waves,
+  LineChart,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -35,6 +36,7 @@ export function AdminSidebarWeb() {
 
   const items = [
     { title: "Dashboard", url: "/admin/web", icon: LayoutDashboard, end: true },
+    { title: "Analytics", url: "/admin/web/analytics", icon: LineChart },
     { title: "Contenido", url: "/admin/web/contenido", icon: FileText },
     { title: "Hero Slides", url: "/admin/web/slides", icon: ImageIcon },
     { title: "Noticias", url: "/admin/web/noticias", icon: Newspaper },

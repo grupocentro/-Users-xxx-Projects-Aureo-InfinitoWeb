@@ -1,4 +1,5 @@
 import { MapPin, Clock, Car, Navigation, ParkingCircle } from "lucide-react";
+import { fireAndForget } from "@/lib/analytics";
 
 const CHIPS = [
   { icon: Clock,         label: "Abierto: 10 – 20 hs" },
@@ -238,6 +239,7 @@ export default function MapaSection() {
               href={MAPS_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => fireAndForget("mapa_click", { element_label: "Mapa info card" })}
               className="flex items-center gap-2 w-full justify-center py-3 rounded-2xl text-sm font-black text-white transition-all hover:brightness-110 hover:scale-[1.02]"
               style={{
                 background: "linear-gradient(135deg, hsl(var(--water-600)), hsl(var(--water-400)))",
@@ -300,6 +302,7 @@ export default function MapaSection() {
           href={MAPS_URL}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => fireAndForget("mapa_click", { element_label: "Mapa CTA principal" })}
           className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl text-white font-black text-base transition-all hover:brightness-110 hover:scale-[1.01]"
           style={{
             background: "linear-gradient(135deg, hsl(var(--water-700)), hsl(var(--water-500)), hsl(var(--water-400)))",

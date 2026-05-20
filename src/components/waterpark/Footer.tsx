@@ -1,6 +1,7 @@
 import { Phone, MapPin, Instagram, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 import infinitoLogoWhite from "@/assets/infinito-logo-white.png";
+import { fireAndForget } from "@/lib/analytics";
 
 const WA_URL =
   "https://api.whatsapp.com/send?phone=543512041301&text=Hola!%20Quiero%20info%20sobre%20Infinito%20Water%20Park";
@@ -86,7 +87,13 @@ export default function Footer() {
           <div>
             <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-4">Contacto</p>
             <div className="flex flex-col gap-3">
-              <a href={WA_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 group">
+              <a
+                href={WA_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => fireAndForget("whatsapp_click", { element_label: "Footer phone" })}
+                className="flex items-center gap-2 group"
+              >
                 <Phone className="w-4 h-4 flex-shrink-0" style={{ color: "hsl(var(--water-300))" }} />
                 <span className="text-white/60 group-hover:text-white text-sm transition-colors">+54 351 204-1301</span>
               </a>
@@ -100,6 +107,7 @@ export default function Footer() {
               href={WA_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => fireAndForget("contacto_click", { element_label: "Footer CTA Escribinos" })}
               className="inline-flex items-center gap-2 mt-5 px-4 py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-95"
               style={{ background: "hsl(var(--water-500))", boxShadow: "0 4px 16px hsl(var(--water-500) / 0.3)" }}
             >
