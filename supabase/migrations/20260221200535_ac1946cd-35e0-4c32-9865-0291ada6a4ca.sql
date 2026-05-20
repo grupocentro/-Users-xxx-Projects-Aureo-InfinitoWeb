@@ -1,0 +1,1 @@
+UPDATE tipos_entrada SET precio_finde = 10000 WHERE id = 'db891fb3-74b0-4a96-9d11-bc026e055167';

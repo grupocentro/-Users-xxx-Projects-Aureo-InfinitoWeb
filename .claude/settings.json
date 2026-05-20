@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun --version)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(npm audit *)",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(tee /tmp/dev-server.log)",
+      "Read(//private/tmp/**)",
+      "Bash(curl -s -o /dev/null -w \"HTTP=%{http_code} TIME=%{time_total}s SIZE=%{size_download}b\" http://localhost:8080/)",
+      "Bash(curl -s http://localhost:8080/)",
+      "Bash(cp /Users/xxx/Projects/Aureo/InfinitoWeb/package.json /tmp/pkg-before.json)",
+      "Bash(cp /Users/xxx/Projects/Aureo/InfinitoWeb/package-lock.json /tmp/lock-before.json)",
+      "Read(//tmp/**)",
+      "Bash(awk -F'\"' '{print $4}')",
+      "Bash(python3 -c ' *)",
+      "Bash(cp /Users/xxx/Projects/Aureo/InfinitoWeb/package.json /tmp/pkg-pre-etapa6.json)",
+      "Bash(cp /Users/xxx/Projects/Aureo/InfinitoWeb/package-lock.json /tmp/lock-pre-etapa6.json)",
+      "Bash(npm uninstall *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(echo \"GREP_EXIT=$?\")",
+      "Bash(npx --no-install supabase --version)",
+      "Bash(curl -sf -m 2 -o /dev/null -w \"HTTP=%{http_code} TIME=%{time_total}s\\\\n\" http://localhost:8080/)",
+      "Bash(tee /tmp/dev-qa.log)",
+      "Bash(curl -s -o /dev/null -w \"HTTP=%{http_code} TIME=%{time_total}s\\\\n\" http://localhost:8080/)",
+      "Bash(npx playwright *)",
+      "Bash(echo \"TS=$?\")",
+      "Bash(curl -sf -m 2 -o /dev/null -w \"HTTP=%{http_code}\\\\n\" http://localhost:8080/)",
+      "Bash(npm ls *)",
+      "Bash(mkdir -p /Users/xxx/Projects/Aureo/InfinitoWeb/.claude/commands /Users/xxx/Projects/Aureo/InfinitoWeb/.claude/skills/infinito-product /Users/xxx/Projects/Aureo/InfinitoWeb/.claude/skills/infinito-supabase /Users/xxx/Projects/Aureo/InfinitoWeb/.claude/skills/infinito-ui-premium /Users/xxx/Projects/Aureo/InfinitoWeb/.claude/skills/infinito-qa)",
+      "Edit(/.claude/skills/infinito-product/**)",
+      "Edit(/.claude/skills/infinito-supabase/**)",
+      "Edit(/.claude/skills/infinito-ui-premium/**)",
+      "Edit(/.claude/skills/infinito-qa/**)",
+      "Bash(git config *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ],
+    "additionalDirectories": [
+      "/Users/xxx/.claude/projects/-Users-xxx-Projects-Aureo-InfinitoWeb",
+      "/Users/xxx/Projects/Aureo/InfinitoWeb/.claude"
+    ]
+  }
+}

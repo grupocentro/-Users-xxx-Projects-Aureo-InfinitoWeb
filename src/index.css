@@ -1,0 +1,244 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* ── Water palette ── */
+    --water-50:  204 100% 97%;   /* #ebf8ff */
+    --water-100: 196 100% 90%;   /* #caf0f8 */
+    --water-200: 196 95%  78%;   /* #90e0ef */
+    --water-300: 196 100% 60%;   /* #48cae4 */
+    --water-400: 196 100% 43%;   /* #00b4d8 */
+    --water-500: 204 100% 36%;   /* #0096c7 */
+    --water-600: 210 100% 35%;   /* #0077b6 */
+    --water-700: 213 97%  27%;   /* #023e8a */
+    --water-800: 220 90%  16%;   /* #03045e */
+    --water-900: 226 54%  8%;    /* deep navy */
+
+    /* ── App surface ── */
+    --app-bg:      204 60% 97%;  /* light aqua tint */
+    --app-surface: 0 0% 100%;    /* white cards */
+    --app-border:  204 40% 90%;  /* soft blue border */
+    --app-muted:   204 25% 55%;  /* blue-gray text */
+
+    /* ── Legacy event tokens (kept for EventosRealizados) ── */
+    --event-night-deep: 226 54% 8%;
+    --event-night-mid:  210 100% 36%;
+    --event-gold:       38 95%  55%;
+    --event-gold-light: 45 100% 70%;
+    --event-orange:     20 100% 58%;
+    --event-aqua:       196 100% 43%;
+    --event-aqua-light: 193 100% 68%;
+    --event-glass: 210 100% 36% / 0.15;
+    --event-glass-border: 38 95% 55% / 0.3;
+
+    --background: 204 60% 97%;
+    --foreground: 220 90% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 90% 16%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 90% 16%;
+
+    --primary: 210 100% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 204 60% 94%;
+    --secondary-foreground: 210 100% 35%;
+
+    --muted: 204 40% 93%;
+    --muted-foreground: 204 25% 50%;
+
+    --accent: 196 100% 43%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 204 40% 88%;
+    --input:  204 40% 88%;
+    --ring:   210 100% 35%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ==========================================
+   EVENTOS REALIZADOS — Custom Animations
+   ========================================== */
+
+@keyframes shimmer-gold {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+
+@keyframes float-particle {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.6; }
+  33% { transform: translateY(-40px) translateX(10px) scale(1.1); opacity: 1; }
+  66% { transform: translateY(-80px) translateX(-5px) scale(0.9); opacity: 0.7; }
+  100% { transform: translateY(-120px) translateX(0) scale(0.5); opacity: 0; }
+}
+
+@keyframes count-up-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes timeline-draw {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@keyframes badge-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px hsl(var(--event-gold) / 0.4); }
+  50% { box-shadow: 0 0 50px hsl(var(--event-gold) / 0.8), 0 0 80px hsl(var(--event-orange) / 0.4); }
+}
+
+@keyframes wa-ping {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes map-scan {
+  0%, 100% { transform: translateY(0); opacity: 0.8; }
+  50% { transform: translateY(calc(100vh)); opacity: 0.3; }
+}
+
+@keyframes location-ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+
+@keyframes wave-ocaso {
+  0% { transform: translateX(0) scaleY(1); }
+  50% { transform: translateX(-25%) scaleY(0.85); }
+  100% { transform: translateX(-50%) scaleY(1); }
+}
+
+@keyframes slide-up-stagger {
+  from { opacity: 0; transform: translateY(40px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes neon-scan {
+  0%   { top: 20%; opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { top: 80%; opacity: 0; }
+}
+
+@layer utilities {
+  .shimmer-gold {
+    background: linear-gradient(
+      105deg,
+      hsl(var(--event-gold)) 0%,
+      hsl(var(--event-gold-light)) 30%,
+      hsl(var(--event-orange)) 50%,
+      hsl(var(--event-gold-light)) 70%,
+      hsl(var(--event-gold)) 100%
+    );
+    background-size: 200% auto;
+    animation: shimmer-gold 3s linear infinite;
+  }
+
+  .badge-animated {
+    background: linear-gradient(
+      270deg,
+      hsl(var(--event-orange)),
+      hsl(var(--event-gold)),
+      hsl(var(--event-gold-light)),
+      hsl(var(--event-orange))
+    );
+    background-size: 300% 300%;
+    animation: badge-gradient 4s ease infinite;
+  }
+
+  .glow-gold {
+    animation: glow-pulse 2.5s ease-in-out infinite;
+  }
+
+  .event-glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--event-gold) / 0.25);
+  }
+
+  .count-pulse {
+    animation: count-up-pulse 0.3s ease-out;
+  }
+}

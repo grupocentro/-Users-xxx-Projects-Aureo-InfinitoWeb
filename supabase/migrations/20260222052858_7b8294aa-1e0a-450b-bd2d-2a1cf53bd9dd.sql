@@ -1,0 +1,2 @@
+UPDATE public.tipos_entrada SET precio_semana = 71991, precio_finde = 71991 WHERE nombre = 'Mayores';
+UPDATE public.tipos_entrada SET precio_semana = 70991, precio_finde = 70991 WHERE nombre = 'Menores';
