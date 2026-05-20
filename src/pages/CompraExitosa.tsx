@@ -153,8 +153,8 @@ export default function CompraExitosa() {
     if (authLoading) return;
     if (!compraId) { setLoading(false); return; }
     if (!user) {
-      // Si vino de MP sin sesión, mandamos a login y guardamos el destino.
-      navigate(`/login?redirect=${encodeURIComponent(`/compra-exitosa?compra_id=${compraId}`)}`);
+      // Si vino de MP sin sesión, mandamos al login de visitantes con redirect.
+      navigate(`/cliente/login?redirect=${encodeURIComponent(`/compra-exitosa?compra_id=${compraId}`)}`);
       return;
     }
     void fetchCompra(false);

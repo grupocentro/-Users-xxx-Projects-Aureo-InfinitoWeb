@@ -12,11 +12,14 @@ import Index from "./pages/Index";
 // Resto del sitio: lazy para que cada bundle se cargue sólo cuando se navega allí.
 const Eventos          = lazy(() => import("./pages/Eventos"));
 const Login            = lazy(() => import("./pages/Login"));
-const Registro         = lazy(() => import("./pages/Registro"));
 const ResetPassword    = lazy(() => import("./pages/ResetPassword"));
 const Comprar          = lazy(() => import("./pages/Comprar"));
 const CompraExitosa    = lazy(() => import("./pages/CompraExitosa"));
 const MiCuenta         = lazy(() => import("./pages/MiCuenta"));
+
+// Cliente (visitantes del parque) — flujo separado del login interno
+const LoginCliente     = lazy(() => import("./pages/cliente/LoginCliente"));
+const RegistroCliente  = lazy(() => import("./pages/cliente/RegistroCliente"));
 
 // Admin
 const AdminSelector       = lazy(() => import("./pages/admin/AdminSelector"));
@@ -76,8 +79,13 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/eventos" element={<Eventos />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/registro" element={<Registro />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* Cliente (visitantes) — flujo separado del login interno */}
+            <Route path="/cliente/login"    element={<LoginCliente />} />
+            <Route path="/cliente/registro" element={<RegistroCliente />} />
+            {/* Legacy: /registro era el registro de visitantes pre-separación */}
+            <Route path="/registro" element={<Navigate to="/cliente/registro" replace />} />
             <Route path="/comprar" element={<Comprar />} />
             <Route path="/compra-exitosa" element={<CompraExitosa />} />
             <Route path="/mi-cuenta" element={<MiCuenta />} />

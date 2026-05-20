@@ -39,7 +39,10 @@
 
 ## 4. Mapa de rutas
 
-> **Importante**: a partir de la Fase 1 el panel admin opera en doble modo (`/admin/web/*` y `/admin/sistema/*`) con un selector intermedio. Las rutas viejas siguen funcionando vía `<Navigate replace>`.
+> **Importante**:
+> - El panel admin opera en triple modo (`/admin/web/*`, `/admin/ticketera/*`, `/admin/sistemas/*`) con selector intermedio en `/admin/seleccionar`. Las rutas viejas (`/admin/sistema/*`, `/admin/ventas`, etc.) redirigen con `<Navigate replace>`.
+> - **El login interno `/login` tiene PIN gate + triple panel y es EXCLUSIVO para staff/administración.**
+> - **Los visitantes/clientes del parque usan `/cliente/login` y `/cliente/registro`** (sin PIN, sin paneles administrativos). El viejo `/registro` redirige a `/cliente/registro`.
 
 ```
 /                              Home
@@ -47,13 +50,18 @@
 /login                         Login premium
 /registro                      Registro (con captcha matemático)
 /reset-password                Recuperar contraseña
-/comprar                       Calendario + compra parque o evento
+/comprar                       Calendario + compra parque o evento (cliente con sesión)
 /compra-exitosa                Confirmación post-pago
 /mi-cuenta                     Mis tickets (QR + WhatsApp)
 
+# Acceso de visitantes (separado del flujo interno)
+/cliente/login                 Login simple visitantes (acepta ?redirect=)
+/cliente/registro              Registro visitantes
+/registro                      Legacy → redirige a /cliente/registro
+
 /staff/scanner                 Escáner QR (rol control_entradas/admin)
 
-/admin/seleccionar             Selector premium post-login (cards Web/Sistema)
+/admin/seleccionar             Selector premium post-login (cards Web/Ticketera/Sistemas)
 
 /admin/web                     WebLayout (admin + editor)
   ├─ /admin/web                WebDashboard (counts de contenido)

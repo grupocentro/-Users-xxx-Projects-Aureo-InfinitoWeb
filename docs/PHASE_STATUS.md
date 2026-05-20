@@ -1,6 +1,6 @@
 # PHASE_STATUS.md — Estado de fases del proyecto
 
-> Última actualización: 2026-05-20 (post-Fase 5 + triple login con PIN gate)
+> Última actualización: 2026-05-20 (post-Fase 5 + triple login + separación cliente/interno)
 
 Este documento registra el estado real de cada fase del proyecto **Reorganización Admin Dual Mode** de Infinito Water Park (ahora **triple mode** tras la incorporación de Panel Sistemas).
 
@@ -25,6 +25,16 @@ Después de cerrar Fase 5 se incorporaron dos features adicionales por autorizac
 - Sidebar dedicado `AdminSidebarSistemas.tsx` con tema violeta/índigo.
 - Sin CRUDs reales todavía (decisión explícita del usuario para esta fase).
 - `useAdminMode` extendido a `"web" | "ticketera" | "sistemas"` con normalización legacy `"sistema"` → `"ticketera"`.
+
+### Separación Cliente / Interno (2026-05-20)
+- **Login interno `/login`**: exclusivo para admin/editor/control_entradas. PIN obligatorio + triple panel + verificación de rol post-signIn.
+- **Login cliente `/cliente/login`**: nueva ruta pública. Login simple sin PIN. Acepta `?redirect=<path>` con sanitización (bloquea rutas `/admin` y `/staff` como destino). Si el usuario tiene rol interno, muestra aviso sin signOut + atajo al login administrativo.
+- **Registro cliente `/cliente/registro`**: nueva ruta pública. Reescrito en estética premium acuática. Post-registro redirige a `/cliente/login?just_registered=true`.
+- **Legacy `/registro`**: redirige con `<Navigate replace>` a `/cliente/registro`.
+- **Redirects públicos actualizados**: `Comprar.tsx`, `CompraExitosa.tsx`, `MiCuenta.tsx`, `ProximosEventos.tsx` ahora apuntan a `/cliente/login?redirect=<ruta_original>`.
+- **`/login` interno**: si detecta sesión activa de un usuario sin rol interno, redirige a `/mi-cuenta` (antes lo mandaba al selector administrativo y se quedaba atrapado en `/`).
+- **Sin migración nueva**: no se creó rol `cliente`. La ausencia de rol sigue representando al visitante.
+- **Archivo huérfano**: `src/pages/Registro.tsx` viejo queda en disco pero ya no se importa desde ningún lado (la ruta `/registro` ahora redirige). Pendiente de eliminar en limpieza futura.
 
 ## Vista general
 

@@ -120,7 +120,7 @@ export default function Comprar() {
   const handleComprar = async () => {
     if (!user) {
       toast({ title: "Iniciá sesión", description: "Necesitás una cuenta para comprar entradas.", variant: "destructive" });
-      navigate("/login");
+      navigate("/cliente/login?redirect=/comprar");
       return;
     }
     if (!isDirectEvento && !selected) return;
@@ -193,7 +193,7 @@ export default function Comprar() {
   useEffect(() => {
     if (!authLoading && !user) {
       toast({ title: "Iniciá sesión", description: "Necesitás una cuenta para comprar entradas.", variant: "destructive" });
-      navigate("/login");
+      navigate("/cliente/login?redirect=/comprar");
     }
   }, [authLoading, user]);
 

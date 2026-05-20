@@ -43,7 +43,7 @@ export default function MiCuenta() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/cliente/login?redirect=/mi-cuenta"); return; }
 
     const fetchData = async () => {
       // Fase 1: profile + compras del usuario en paralelo.

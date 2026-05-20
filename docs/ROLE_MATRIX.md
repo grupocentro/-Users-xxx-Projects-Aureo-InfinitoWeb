@@ -17,14 +17,25 @@ Sistema de 3 roles + 1 superadmin del proyecto Infinito Water Park.
 - Si el email es `davidcorreosl@gmail.com`, el trigger también inserta `user_roles(user_id, role='admin')`.
 - Otros roles se asignan manualmente desde `/admin/ticketera/usuarios` (admin-only) usando la edge function `admin-create-user` o el panel de gestión.
 
+## Separación de flujos: Cliente vs Interno
+
+A partir de la separación de accesos:
+- **Visitantes del parque** (cliente sin rol) usan `/cliente/login` y `/cliente/registro`. NO ven PIN, NO ven paneles administrativos.
+- **Personal interno** (admin / editor / control_entradas) usa `/login` con PIN + triple panel.
+- `/registro` legacy redirige a `/cliente/registro`.
+- Si un usuario interno entra por `/cliente/login`, recibe un aviso "Esta entrada es para visitantes" con atajo a `/login`. No se le hace signOut.
+- Si un cliente sin rol entra a `/login` ya con sesión activa, el login interno detecta que no tiene rol interno y lo redirige a `/mi-cuenta` (no al selector administrativo).
+
 ## Matriz de acceso por ruta
 
-| Ruta | `admin` | `editor` | `control_entradas` | Sin rol | Anon |
-|------|:-------:|:--------:|:------------------:|:-------:|:----:|
+| Ruta | `admin` | `editor` | `control_entradas` | Sin rol (cliente) | Anon |
+|------|:-------:|:--------:|:------------------:|:-----------------:|:----:|
 | `/` (home) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `/eventos`, `/comprar`, públicas | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `/login`, `/registro`, `/reset-password` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `/mi-cuenta` | ✅ | ✅ | ✅ | ✅ (sólo propio) | ❌ |
+| `/eventos`, públicas estáticas | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `/comprar`, `/compra-exitosa` | ✅ | ✅ | ✅ | ✅ (requiere sesión) | ↪ `/cliente/login` |
+| `/cliente/login`, `/cliente/registro`, `/reset-password` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `/login` (interno con PIN) | ✅ | ✅ | ✅ | ↪ `/mi-cuenta` si ya hay sesión | ✅ pero PIN bloquea |
+| `/mi-cuenta` | ✅ | ✅ | ✅ | ✅ (sólo propio) | ↪ `/cliente/login` |
 | `/admin/seleccionar` | ✅ | ✅ | ↪ bypass `/staff/scanner` | ↪ `/` | ❌ |
 | `/admin/web/*` | ✅ | ✅ | ❌ | ❌ | ❌ |
 | `/admin/ticketera/*` | ✅ | ❌ ↪ selector | ❌ | ❌ | ❌ |

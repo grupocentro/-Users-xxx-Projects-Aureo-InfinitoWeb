@@ -143,7 +143,7 @@ function EventDetailSheet({ event, open, onClose }: { event: Evento | null; open
     });
     if (!user) {
       toast({ title: "Iniciá sesión", description: "Necesitás una cuenta para comprar accesos.", variant: "destructive" });
-      navigate("/login");
+      navigate(`/cliente/login?redirect=${encodeURIComponent(`/comprar?entrada=evento&evento_id=${event.id}`)}`);
       return;
     }
     navigate(`/comprar?entrada=evento&evento_id=${event.id}`);

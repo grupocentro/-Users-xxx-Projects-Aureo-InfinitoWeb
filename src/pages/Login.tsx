@@ -46,17 +46,34 @@ export default function Login() {
   const [pinUnlocked, setPinUnlocked] = useState<boolean>(() => isPinUnlockValid());
   const [sessionCheckDone, setSessionCheckDone] = useState(false);
 
-  // Si ya hay sesión activa, no pedir PIN: enviamos al selector que decide ruta.
+  // Si ya hay sesión activa, decidir destino según rol:
+  //  - Con rol interno (admin/editor/control_entradas) → /admin/seleccionar.
+  //  - Sin rol (cliente) → /mi-cuenta (NO mandarlo al selector administrativo).
   useEffect(() => {
     let cancel = false;
-    supabase.auth.getSession().then(({ data }) => {
-      if (cancel) return;
-      if (data.session) {
-        navigate("/admin/seleccionar", { replace: true });
-      } else {
-        setSessionCheckDone(true);
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (cancel) return;
+        if (!data.session) {
+          setSessionCheckDone(true);
+          return;
+        }
+        const userId = data.session.user.id;
+        const { data: rolesData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId);
+        if (cancel) return;
+        const hasInternalRole = (rolesData ?? []).some((r) => {
+          const role = r.role as string;
+          return role === "admin" || role === "editor" || role === "control_entradas";
+        });
+        navigate(hasInternalRole ? "/admin/seleccionar" : "/mi-cuenta", { replace: true });
+      } catch {
+        if (!cancel) setSessionCheckDone(true);
       }
-    }).catch(() => { if (!cancel) setSessionCheckDone(true); });
+    })();
     return () => { cancel = true; };
   }, [navigate]);
 

@@ -99,6 +99,9 @@ Las siguientes redirecciones deben mantenerse funcionando:
 /admin/sistema/validaciones → /admin/ticketera/validaciones
 /admin/sistema/reportes     → /admin/ticketera/reportes
 /admin/sistema/usuarios     → /admin/ticketera/usuarios
+
+# Legacy del registro pre-separación cliente/interno
+/registro                   → /cliente/registro
 ```
 
 **No remover ni alterar** sin autorización explícita. Externals pueden tener bookmarks o links a las rutas viejas.
