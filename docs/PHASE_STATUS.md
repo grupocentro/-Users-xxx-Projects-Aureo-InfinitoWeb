@@ -252,8 +252,12 @@ Verificación técnica completa. **QA visual en browser real (responsive mobile/
 
 ## Pendientes globales del proyecto (no específicos de una fase)
 
-### 🔴 Crítico — BLOQUEANTE para producción
-- **x-signature MercadoPago**: el webhook `webhook-mercadopago/index.ts` valida amount comparison e idempotencia, pero **no verifica la firma HMAC** del payload entrante. Cualquiera con el `payment_id` puede forzar reverificación. Requiere implementar verificación HMAC con `MP_WEBHOOK_SECRET` cargado en Supabase Secrets. **No autorizar deploy productivo sin esto.**
+### ✅ Resuelto — x-signature MercadoPago (2026-05-20)
+- **Verificación HMAC SHA-256 de `x-signature` implementada** en `webhook-mercadopago/index.ts` con anti-replay de ±5 minutos sobre `ts`.
+- Helper `verifyMpSignature(paymentId, signatureHeader, requestIdHeader)` puro.
+- Comparación timing-safe del hash (XOR + máscara, sin `===` directo).
+- Modo gradual: si `MP_WEBHOOK_SECRET` no está cargado en Supabase Secrets, se loguea warning y se acepta (compat para el deploy). Una vez cargado el secret, la validación es estricta y cualquier firma inválida o `ts` fuera de ventana devuelve 401.
+- **Pendiente operativo del usuario**: cargar `MP_WEBHOOK_SECRET` en Supabase Secrets antes del deploy productivo. La clave se obtiene en MP Dashboard → Tus integraciones → Webhooks → Configurar notificaciones → Clave secreta.
 
 ### 🟠 Pendientes menores
 - **Selector visual de `punto_acceso_id` en Scanner**: la RPC `validar_qr(text, jsonb)` y el frontend ya soportan metadata extra. Falta UI en `Scanner.tsx` para que el operador seleccione el punto antes de escanear. Sin esto, las validaciones registran `punto_acceso_id: null` en `qr_validaciones.metadata`.

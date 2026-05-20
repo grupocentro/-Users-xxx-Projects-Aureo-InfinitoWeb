@@ -7,7 +7,7 @@ Zonas del código y la BD que **NO se tocan sin autorización explícita** del u
 | Archivo | Razón | Severidad |
 |---------|-------|-----------|
 | `supabase/functions/create-payment/index.ts` | Crea preferencias de pago. Validaciones de seguridad ya implementadas (cantidad, total, estado). | 🔴 Crítica |
-| `supabase/functions/webhook-mercadopago/index.ts` | Recibe notificaciones de pago. Idempotencia, amount comparison, manejo de `payment_mismatch`. **x-signature pendiente — BLOQUEANTE para producción.** | 🔴 Crítica |
+| `supabase/functions/webhook-mercadopago/index.ts` | Recibe notificaciones de pago. Verificación HMAC SHA-256 de `x-signature` + anti-replay 5min implementadas (modo gradual: si `MP_WEBHOOK_SECRET` no está cargado, loguea warning y acepta — cuando se carga, valida estrictamente). Idempotencia, amount comparison, manejo de `payment_mismatch`. | 🔴 Crítica |
 
 Cualquier cambio acá impacta directamente la facturación y la generación de QRs.
 
