@@ -102,10 +102,13 @@ export default function Scanner() {
   const [manualCode, setManualCode] = useState("");
   const [processing, setProcessing] = useState(false);
   const [cameraError, setCameraError] = useState(false);
-  const [continuous, setContinuous] = useState(true);
+  // `autoResumeCamera`: cuando el operador presiona "Leer siguiente QR", la cámara
+  // se reactiva sola si esto está ON. Si está OFF, el operador debe tocar
+  // "Activar cámara" manualmente. NO afecta la visibilidad del resultado: el
+  // resultado siempre persiste hasta que el operador confirme manualmente.
+  const [autoResumeCamera, setAutoResumeCamera] = useState(true);
   const scannerRef = useRef<{ stop: () => void; destroy: () => void } | null>(null);
   const inFlightRef = useRef(false);
-  const autoResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // KPIs operativos (recargan en cada validación exitosa)
   const [stats, setStats] = useState<{
@@ -249,7 +252,6 @@ export default function Scanner() {
   useEffect(() => {
     return () => {
       scannerRef.current?.destroy();
-      if (autoResetRef.current) clearTimeout(autoResetRef.current);
     };
   }, []);
 
@@ -295,19 +297,9 @@ export default function Scanner() {
       else if (res.resultado === "ya_usado" || res.resultado === "fecha_invalida") vibrate(VIBRATE_WARN);
       else vibrate(VIBRATE_ERROR);
 
-      // Refresh KPIs después de cada validación
+      // Refresh KPIs después de cada validación.
+      // El resultado queda visible hasta que el operador toque "Leer siguiente QR".
       void fetchStats();
-
-      // Modo Operación Continua: auto-reset y restart a los 2 segundos
-      if (continuous) {
-        if (autoResetRef.current) clearTimeout(autoResetRef.current);
-        autoResetRef.current = setTimeout(() => {
-          setResult(null);
-          setManualCode("");
-          inFlightRef.current = false;
-          if (!scanning) void startCamera();
-        }, 2000);
-      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido";
       console.error("Validation error:", err);
@@ -315,15 +307,20 @@ export default function Scanner() {
       vibrate(VIBRATE_ERROR);
     } finally {
       setProcessing(false);
-      if (!continuous) inFlightRef.current = false;
+      // inFlightRef sigue en true mientras haya resultado visible — esto bloquea
+      // lecturas duplicadas hasta que el operador confirme manualmente.
     }
   };
 
+  // "Leer siguiente QR": limpia el resultado, libera el lock anti-doble lectura
+  // y, si autoResumeCamera está ON, reactiva la cámara automáticamente.
   const handleClear = () => {
-    if (autoResetRef.current) { clearTimeout(autoResetRef.current); autoResetRef.current = null; }
     setResult(null);
     setManualCode("");
     inFlightRef.current = false;
+    if (autoResumeCamera && !scanning) {
+      void startCamera();
+    }
   };
 
   // -------------------------------------------------------------------------
@@ -417,25 +414,27 @@ export default function Scanner() {
 
           {/* ── Columna central: cámara + manual input ─────────────── */}
           <section className="space-y-3 sm:space-y-4">
-            {/* Toggle "Modo Operación Continua" */}
+            {/* Toggle: reanudar cámara automáticamente tras "Leer siguiente QR".
+                El resultado SIEMPRE persiste hasta confirmación manual — este
+                toggle sólo controla si la cámara se reactiva sola al continuar. */}
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-water-200 bg-white/80 px-4 py-2.5 shadow-sm backdrop-blur-md">
               <div className="flex items-center gap-2.5">
-                <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${continuous ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
+                <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${autoResumeCamera ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
                   <Sparkles className="h-4 w-4" />
                 </span>
                 <div className="leading-tight">
-                  <p className="text-sm font-bold text-water-800">Modo Operación Continua</p>
-                  <p className="text-[11px] text-app-muted">Auto-reset 2s tras cada validación</p>
+                  <p className="text-sm font-bold text-water-800">Reanudar cámara al continuar</p>
+                  <p className="text-[11px] text-app-muted">Esperando confirmación para siguiente lectura</p>
                 </div>
               </div>
               <button
-                onClick={() => setContinuous((v) => !v)}
-                className={`relative h-7 w-12 flex-shrink-0 rounded-full transition-colors ${continuous ? "bg-emerald-500" : "bg-slate-300"}`}
-                aria-label="Toggle modo continuo"
+                onClick={() => setAutoResumeCamera((v) => !v)}
+                className={`relative h-7 w-12 flex-shrink-0 rounded-full transition-colors ${autoResumeCamera ? "bg-emerald-500" : "bg-slate-300"}`}
+                aria-label="Toggle reanudar cámara"
                 role="switch"
-                aria-checked={continuous}
+                aria-checked={autoResumeCamera}
               >
-                <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-transform ${continuous ? "translate-x-5" : "translate-x-0.5"}`} />
+                <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-transform ${autoResumeCamera ? "translate-x-5" : "translate-x-0.5"}`} />
               </button>
             </div>
 
@@ -489,9 +488,9 @@ export default function Scanner() {
                 </>
               )}
 
-              {/* RESULTADO overlay */}
+              {/* RESULTADO overlay — persistente hasta "Leer siguiente QR" */}
               {result && (
-                <ResultOverlay result={result} continuous={continuous} onClear={handleClear} />
+                <ResultOverlay result={result} onClear={handleClear} />
               )}
 
               {/* Processing overlay */}
@@ -637,48 +636,47 @@ export default function Scanner() {
 // ResultOverlay — overlay full sobre la cámara con resultado del scan
 // =============================================================================
 function ResultOverlay({
-  result, continuous, onClear,
+  result, onClear,
 }: {
   result: ValidarQrResponse;
-  continuous: boolean;
   onClear: () => void;
 }) {
   const cfg = RESULTADO_CONFIG[result.resultado];
   const theme = {
-    ok:    { gradient: "from-emerald-500 via-emerald-600 to-emerald-700", icon: CheckCircle2,  glow: "sc-glow-ok",   iconBg: "bg-emerald-400/30" },
-    warn:  { gradient: "from-amber-500 via-amber-600 to-orange-600",       icon: AlertTriangle, glow: "sc-glow-warn", iconBg: "bg-amber-400/30" },
-    error: { gradient: "from-rose-500 via-rose-600 to-rose-700",            icon: XCircle,       glow: "sc-glow-err",  iconBg: "bg-rose-400/30" },
+    ok:    { gradient: "from-emerald-500 via-emerald-600 to-emerald-700", icon: CheckCircle2,  glow: "sc-glow-ok"  },
+    warn:  { gradient: "from-amber-500 via-amber-600 to-orange-600",       icon: AlertTriangle, glow: "sc-glow-warn" },
+    error: { gradient: "from-rose-500 via-rose-600 to-rose-700",            icon: XCircle,       glow: "sc-glow-err"  },
   }[cfg.variant];
   const Icon = theme.icon;
   const now = result.usado_at ? new Date(result.usado_at) : new Date();
 
   return (
-    <div className={`absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br ${theme.gradient} text-white sc-fade-in`}>
+    <div className={`absolute inset-0 flex flex-col items-center justify-center overflow-y-auto bg-gradient-to-br ${theme.gradient} px-4 py-5 text-white sc-fade-in`}>
       {/* Brillos decorativos */}
       <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/15 blur-3xl" />
       <div className="pointer-events-none absolute -left-16 -bottom-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
 
       {/* Icono central con glow */}
-      <div className={`mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-2xl ${theme.glow} sm:h-24 sm:w-24`}>
-        <Icon className={`h-12 w-12 ${cfg.variant === "ok" ? "text-emerald-600" : cfg.variant === "warn" ? "text-amber-600" : "text-rose-600"} sm:h-14 sm:w-14`} />
+      <div className={`mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-2xl ${theme.glow} sm:h-20 sm:w-20`}>
+        <Icon className={`h-10 w-10 ${cfg.variant === "ok" ? "text-emerald-600" : cfg.variant === "warn" ? "text-amber-600" : "text-rose-600"} sm:h-12 sm:w-12`} />
       </div>
 
       {/* Welcome para válido */}
       {cfg.welcome && cfg.variant === "ok" && (
-        <p className="px-4 text-[11px] font-bold uppercase tracking-[0.2em] text-white/85 sm:text-xs">
+        <p className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white/85 sm:text-xs">
           🎉 {cfg.welcome}
         </p>
       )}
 
       {/* Título y mensaje */}
       <h2 className="mt-1 px-4 text-center font-black leading-tight drop-shadow-md"
-          style={{ fontSize: "clamp(1.5rem, 4vw, 2.25rem)" }}>
+          style={{ fontSize: "clamp(1.25rem, 3.5vw, 2rem)" }}>
         {cfg.titulo}
       </h2>
-      <p className="mt-1 max-w-md px-6 text-center text-sm text-white/90 sm:text-base">{result.mensaje}</p>
+      <p className="mt-1 max-w-md px-6 text-center text-xs text-white/90 sm:text-sm">{result.mensaje}</p>
 
       {/* Detalles */}
-      <div className="mt-4 grid w-full max-w-md grid-cols-2 gap-2 px-6 sm:gap-3">
+      <div className="mt-3 grid w-full max-w-md grid-cols-2 gap-1.5 px-4 sm:gap-2.5">
         {result.comprador_nombre && (
           <DetailChip icon={User}   label="Visitante" value={result.comprador_nombre} />
         )}
@@ -719,20 +717,17 @@ function ResultOverlay({
         )}
       </div>
 
-      {/* Continuo: indicador de auto-reset */}
-      {continuous ? (
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold ring-1 ring-white/20 backdrop-blur-md">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Listo para el siguiente en 2s…
-        </div>
-      ) : (
-        <button
-          onClick={onClear}
-          className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-white/95 px-6 py-2.5 text-sm font-bold text-water-800 shadow-md hover:bg-white"
-        >
-          Escanear otro
-        </button>
-      )}
+      {/* Botón persistente "Leer siguiente QR" — el operador SIEMPRE controla
+          cuándo continuar. Tamaño grande, fácil de tocar en mobile. */}
+      <button
+        type="button"
+        onClick={onClear}
+        autoFocus
+        className="mt-4 inline-flex w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-base font-black text-water-800 shadow-xl ring-2 ring-white/40 transition-all hover:bg-water-50 hover:scale-[1.02] active:scale-[0.98] sm:py-4 sm:text-lg"
+      >
+        <RefreshCw className="h-5 w-5" />
+        Leer siguiente QR
+      </button>
     </div>
   );
 }
