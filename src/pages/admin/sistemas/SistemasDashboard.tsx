@@ -1,16 +1,17 @@
 import { useState, type ReactNode } from "react";
 import {
   ExternalLink, ArrowUpRight, Phone, Sparkles, Users, ShieldCheck, Gauge,
-  Lock, Activity, Cpu, Radio, type LucideIcon,
+  Lock, Activity, Cpu, Radio, Glasses, Map as MapIcon, Bot, type LucideIcon,
 } from "lucide-react";
 import eventosHeroBg from "@/assets/eventos-hero-bg.jpg";
 import infinitoLogoWhite from "@/assets/infinito-logo-white.png";
+import tour360Banner from "@/assets/360.png";
 
 // =============================================================================
 // Panel Sistemas — HUB premium SaaS enterprise
 // =============================================================================
-// Grid 3×2 con 6 sistemas: 1 activo real (Call Center) + 5 placeholders.
-// Estilo: ecosistema operativo del parque, paleta water + violet + grafito.
+// Grid 3×3 con 9 sistemas: 1 activo real (Call Center) + 8 placeholders.
+// Incluye 4 banners destacados: heatmap, tour 360, mapa inteligente, asistente IA.
 // =============================================================================
 
 interface SystemDef {
@@ -34,14 +35,18 @@ interface ActiveSystem extends SystemDef {
 
 interface DevSystem extends SystemDef {
   status: "dev";
-  /** Si true, usa el banner visual destacado tipo "heatmap analítico" en vez del genérico */
+  /** Si true, usa el banner visual destacado tipo "heatmap analítico" en vez del genérico (legacy demográfico) */
   featured?: boolean;
+  /** Variante de banner premium: heatmap (Control Demográfico), tour360 (imagen real), mapa, asistente IA */
+  bannerVariant?: "heatmap" | "tour360" | "mapa" | "asistente";
+  /** Tag categoría (ej. "Innovación tecnológica") */
+  category?: string;
 }
 
 type System = ActiveSystem | DevSystem;
 
 const SYSTEMS: System[] = [
-  // ── 1. ACTIVO REAL ────────────────────────────────────────────────────────
+  // ── ROW 1: ACTIVO + 2 INNOVACIONES PREMIUM ───────────────────────────────
   {
     key: "call-center",
     title: "Sistema de Call Center",
@@ -55,7 +60,6 @@ const SYSTEMS: System[] = [
     url: "https://sistemasinfinito.online",
     bannerPublic: "/call-center-banner.png",
   },
-  // ── 2–6. PLACEHOLDERS PREMIUM ────────────────────────────────────────────
   {
     key: "demografico",
     title: "Sistema de Control Demográfico",
@@ -67,6 +71,50 @@ const SYSTEMS: System[] = [
     glow: "rgba(124, 92, 246, 0.45)",
     status: "dev",
     featured: true,
+    bannerVariant: "heatmap",
+  },
+  {
+    key: "tour360",
+    title: "Tour 360 Interactivo",
+    subtitle: "Recorrido virtual del parque",
+    description: "Sistema interactivo para recorrer todo el parque de forma inmersiva, explorar atracciones, zonas, accesos y experiencias antes de la visita.",
+    icon: Glasses,
+    accentFrom: "from-cyan-500",
+    accentTo: "to-blue-600",
+    glow: "rgba(59, 130, 246, 0.45)",
+    status: "dev",
+    featured: true,
+    bannerVariant: "tour360",
+    category: "Innovación tecnológica",
+  },
+  // ── ROW 2: 2 INNOVACIONES PREMIUM + 1 OPERATIVA ──────────────────────────
+  {
+    key: "mapa",
+    title: "Mapa Inteligente del Parque",
+    subtitle: "Ubicación, recorridos y zonas activas",
+    description: "Sistema de mapa interactivo para visualizar atracciones, accesos, servicios, recorridos sugeridos y zonas de mayor circulación dentro del parque.",
+    icon: MapIcon,
+    accentFrom: "from-teal-500",
+    accentTo: "to-water-600",
+    glow: "rgba(20, 184, 166, 0.45)",
+    status: "dev",
+    featured: true,
+    bannerVariant: "mapa",
+    category: "Innovación tecnológica",
+  },
+  {
+    key: "asistente-ia",
+    title: "Asistente IA del Visitante",
+    subtitle: "Atención inteligente y recomendaciones",
+    description: "Asistente conversacional para orientar a los visitantes, responder consultas, recomendar atracciones, informar horarios y asistir durante la experiencia en el parque.",
+    icon: Bot,
+    accentFrom: "from-violet-500",
+    accentTo: "to-cyan-500",
+    glow: "rgba(139, 92, 246, 0.45)",
+    status: "dev",
+    featured: true,
+    bannerVariant: "asistente",
+    category: "Innovación tecnológica",
   },
   {
     key: "eventos",
@@ -79,6 +127,7 @@ const SYSTEMS: System[] = [
     glow: "rgba(217, 70, 239, 0.35)",
     status: "dev",
   },
+  // ── ROW 3: 3 OPERATIVAS ──────────────────────────────────────────────────
   {
     key: "rrhh",
     title: "Plataforma de RRHH",
@@ -295,7 +344,8 @@ function ActiveSystemCard({ system }: { system: ActiveSystem }) {
 // ──────────────────────────────────────────────────────────────────────────────
 function DevSystemCard({ system }: { system: DevSystem }) {
   const Icon = system.icon;
-  const isFeatured = !!system.featured;
+  const isFeatured = !!system.featured || !!system.bannerVariant;
+  const variant = system.bannerVariant ?? (system.featured ? "heatmap" : undefined);
   return (
     <div
       role="group"
@@ -318,7 +368,7 @@ function DevSystemCard({ system }: { system: DevSystem }) {
 
       {/* ── Banner ────────────────────────────────────────────────── */}
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 8" }}>
-        {isFeatured ? (
+        {variant === "heatmap" ? (
           // ─── Banner HEATMAP ANALÍTICO (Sistema de Control Demográfico) ───
           <>
             {/* Base oscura violeta-azul (mapa nocturno) */}
@@ -421,6 +471,231 @@ function DevSystemCard({ system }: { system: DevSystem }) {
             </div>
 
             {/* Status pill */}
+            <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-500/20 px-2.5 py-1 backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-300" style={{ boxShadow: "0 0 6px #fcd34d" }} />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100">En desarrollo</span>
+            </div>
+          </>
+        ) : variant === "tour360" ? (
+          // ─── Banner TOUR 360 (imagen real con overlay premium) ───
+          <>
+            <img
+              src={tour360Banner}
+              alt="Tour 360 Interactivo del parque"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
+            />
+            {/* Overlay azul oscuro para legibilidad y consistencia premium */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(2,10,40,0.55) 0%, rgba(2,30,80,0.30) 45%, rgba(2,10,40,0.45) 100%)",
+              }}
+            />
+            {/* Glow accent inferior (water/cyan) */}
+            <div
+              className="absolute inset-0 opacity-50"
+              style={{ background: `radial-gradient(ellipse at 30% 110%, ${system.glow}, transparent 60%)` }}
+            />
+            {/* Shimmer al hover */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-100"
+              style={{
+                background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.16) 50%, transparent 65%)",
+                backgroundSize: "220% 100%",
+                animation: "shimmer-premium 3.5s linear infinite",
+              }}
+            />
+
+            {/* Top-left: pill Innovación tecnológica */}
+            <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-cyan-300/40 bg-cyan-500/15 px-2.5 py-1 backdrop-blur-md">
+              <Sparkles className="h-3 w-3 text-cyan-200" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-50">
+                Innovación tecnológica
+              </span>
+            </div>
+
+            {/* Top-right: status pill */}
+            <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-500/20 px-2.5 py-1 backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-300" style={{ boxShadow: "0 0 6px #fcd34d" }} />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100">En desarrollo</span>
+            </div>
+          </>
+        ) : variant === "mapa" ? (
+          // ─── Banner MAPA INTELIGENTE (estilo mapa digital con rutas) ───
+          <>
+            {/* Base dark teal/azul */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(195 45% 14%) 0%, hsl(190 50% 20%) 55%, hsl(185 55% 26%) 100%)",
+              }}
+            />
+            {/* Grid mapa */}
+            <div
+              className="absolute inset-0 opacity-25"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(94,234,212,0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(94,234,212,0.22) 1px, transparent 1px)",
+                backgroundSize: "28px 28px",
+              }}
+            />
+            {/* SVG: rutas + pins */}
+            <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 320 160">
+              <defs>
+                <radialGradient id="map-pin-glow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(94,234,212,0.85)" />
+                  <stop offset="60%" stopColor="rgba(94,234,212,0.18)" />
+                  <stop offset="100%" stopColor="rgba(94,234,212,0)" />
+                </radialGradient>
+                <radialGradient id="map-pin-cyan" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(56,189,248,0.85)" />
+                  <stop offset="60%" stopColor="rgba(56,189,248,0.18)" />
+                  <stop offset="100%" stopColor="rgba(56,189,248,0)" />
+                </radialGradient>
+              </defs>
+              {/* Rutas curvas (recorridos sugeridos) */}
+              <path
+                d="M 25 130 Q 80 80 130 95 T 230 70 T 300 50"
+                stroke="rgba(94,234,212,0.7)"
+                strokeWidth="1.5"
+                fill="none"
+                strokeDasharray="0"
+              />
+              <path
+                d="M 25 130 Q 80 80 130 95 T 230 70 T 300 50"
+                stroke="rgba(94,234,212,0.25)"
+                strokeWidth="4"
+                fill="none"
+                strokeLinecap="round"
+              />
+              <path
+                d="M 40 35 Q 110 55 165 45 T 280 100"
+                stroke="rgba(56,189,248,0.5)"
+                strokeWidth="1"
+                strokeDasharray="3 3"
+                fill="none"
+              />
+              {/* Glow detrás de los pins principales */}
+              <circle cx="80" cy="55" r="22" fill="url(#map-pin-glow)" />
+              <circle cx="170" cy="95" r="20" fill="url(#map-pin-cyan)" />
+              <circle cx="250" cy="60" r="18" fill="url(#map-pin-glow)" />
+              <circle cx="60" cy="115" r="16" fill="url(#map-pin-cyan)" />
+              {/* Pins centrales (puntos brillantes) */}
+              {[
+                [80, 55], [170, 95], [250, 60], [60, 115], [220, 130], [130, 40],
+              ].map(([cx, cy], i) => (
+                <g key={i}>
+                  <circle cx={cx} cy={cy} r="3" fill="rgba(94,234,212,0.95)" />
+                  <circle cx={cx} cy={cy} r="6" fill="none" stroke="rgba(94,234,212,0.5)" strokeWidth="1" />
+                </g>
+              ))}
+              {/* Building outlines (rectángulos sutiles) */}
+              <rect x="100" y="105" width="14" height="10" fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth="0.8" />
+              <rect x="190" y="40" width="12" height="14" fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth="0.8" />
+              <rect x="265" y="100" width="16" height="12" fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth="0.8" />
+            </svg>
+            {/* Glow accent del sistema */}
+            <div
+              className="absolute inset-0 opacity-45"
+              style={{ background: `radial-gradient(circle at 30% 70%, ${system.glow}, transparent 55%)` }}
+            />
+
+            {/* Top-left: pill */}
+            <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-teal-300/40 bg-teal-500/15 px-2.5 py-1 backdrop-blur-md">
+              <Sparkles className="h-3 w-3 text-teal-200" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-50">
+                Innovación tecnológica
+              </span>
+            </div>
+
+            {/* Icono Map central */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/12 ring-1 ring-white/25 backdrop-blur-md">
+                <Icon className="h-6 w-6 text-white/85" />
+              </div>
+            </div>
+
+            {/* Top-right: status */}
+            <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-500/20 px-2.5 py-1 backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-300" style={{ boxShadow: "0 0 6px #fcd34d" }} />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100">En desarrollo</span>
+            </div>
+          </>
+        ) : variant === "asistente" ? (
+          // ─── Banner ASISTENTE IA (burbujas de chat + glow violet/aqua) ───
+          <>
+            {/* Base dark violet/azul */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(258 40% 16%) 0%, hsl(248 45% 22%) 55%, hsl(220 50% 28%) 100%)",
+              }}
+            />
+            {/* Glow violet detrás */}
+            <div
+              className="absolute inset-0 opacity-55"
+              style={{ background: `radial-gradient(circle at 30% 50%, rgba(139,92,246,0.55), transparent 60%)` }}
+            />
+            {/* Glow aqua a la derecha */}
+            <div
+              className="absolute inset-0 opacity-40"
+              style={{ background: `radial-gradient(circle at 80% 70%, rgba(56,189,248,0.5), transparent 55%)` }}
+            />
+            {/* Partículas/dots de "thinking" sutiles */}
+            <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 320 160">
+              {[
+                [40, 30], [55, 22], [80, 18], [240, 30], [260, 22], [285, 28],
+                [25, 110], [300, 110], [50, 140], [285, 140], [165, 12], [155, 148],
+              ].map(([cx, cy], i) => (
+                <circle key={i} cx={cx} cy={cy} r="1.2" fill="rgba(255,255,255,0.55)" />
+              ))}
+            </svg>
+
+            {/* Burbujas de chat — incoming (izq, claro) */}
+            <div className="absolute left-5 top-1/2 -translate-y-[calc(50%+22px)] rounded-2xl rounded-bl-sm border border-white/15 bg-white/12 px-3 py-1.5 backdrop-blur-md">
+              <div className="flex items-center gap-1">
+                <span className="h-1 w-1 animate-pulse rounded-full bg-white/70" style={{ animationDelay: "0ms" }} />
+                <span className="h-1 w-1 animate-pulse rounded-full bg-white/70" style={{ animationDelay: "150ms" }} />
+                <span className="h-1 w-1 animate-pulse rounded-full bg-white/70" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+            <div className="absolute left-5 top-1/2 translate-y-1 rounded-2xl rounded-bl-sm border border-white/15 bg-white/10 px-3 py-1.5 backdrop-blur-md">
+              <div className="h-1 w-12 rounded-full bg-white/40" />
+            </div>
+
+            {/* Burbuja de chat — outgoing (der, violeta) */}
+            <div
+              className="absolute right-5 top-1/2 -translate-y-[calc(50%+8px)] rounded-2xl rounded-br-sm border border-violet-300/30 bg-violet-500/30 px-3 py-1.5 backdrop-blur-md"
+              style={{ boxShadow: "0 4px 18px rgba(139,92,246,0.4)" }}
+            >
+              <div className="flex items-center gap-1">
+                <div className="h-1 w-10 rounded-full bg-white/85" />
+              </div>
+            </div>
+
+            {/* Icono Bot central con glow */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div
+                className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-400/30 to-cyan-400/30 ring-1 ring-white/25 backdrop-blur-md"
+                style={{ boxShadow: "0 0 32px rgba(139,92,246,0.5)" }}
+              >
+                <Icon className="h-6 w-6 text-white" />
+              </div>
+            </div>
+
+            {/* Top-left: pill */}
+            <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-violet-300/40 bg-violet-500/20 px-2.5 py-1 backdrop-blur-md">
+              <Sparkles className="h-3 w-3 text-violet-200" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-violet-50">
+                Innovación tecnológica
+              </span>
+            </div>
+
+            {/* Top-right: status */}
             <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-500/20 px-2.5 py-1 backdrop-blur-md">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-300" style={{ boxShadow: "0 0 6px #fcd34d" }} />
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100">En desarrollo</span>
