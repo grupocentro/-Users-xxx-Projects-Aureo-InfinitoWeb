@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Menu, X, UserCircle, LogIn, ScanLine, LayoutDashboard } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Menu, X, UserCircle, LogIn, ScanLine, LayoutDashboard, ChevronDown, User, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -20,9 +20,11 @@ const PAGE_LINKS = [
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { isStaff, isAdmin, isAdminOrEditor } = useUserRole();
 
   useEffect(() => {
@@ -30,6 +32,25 @@ export default function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Cierre del dropdown "Mi Cuenta" al click fuera + Escape.
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAccountMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [accountMenuOpen]);
 
   const handleScrollLink = (href: string) => {
     setIsOpen(false);
@@ -46,8 +67,25 @@ export default function Navbar() {
     navigate(path);
   };
 
+  const handleAccountAction = (action: "cuenta" | "perfil" | "logout") => {
+    setAccountMenuOpen(false);
+    if (action === "cuenta") {
+      navigate("/mi-cuenta");
+    } else if (action === "perfil") {
+      navigate("/mi-cuenta?section=perfil");
+    } else if (action === "logout") {
+      void signOut().finally(() => navigate("/"));
+    }
+  };
+
   return (
     <>
+      <style>{`
+        @keyframes account-menu-in {
+          from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
       <header
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-400"
         style={{
@@ -78,8 +116,11 @@ export default function Navbar() {
               <button
                 key={link.href}
                 onClick={() => handleScrollLink(link.href)}
-                className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 hover:bg-blue-50 relative group"
-                style={{ color: scrolled ? "hsl(var(--water-700))" : "rgba(255,255,255,0.85)" }}
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 relative group ${
+                  scrolled
+                    ? "text-water-700 hover:bg-water-50 hover:text-water-800"
+                    : "text-white/90 hover:bg-white/15 hover:text-white"
+                }`}
               >
                 {link.label}
               </button>
@@ -88,8 +129,11 @@ export default function Navbar() {
               <button
                 key={link.path}
                 onClick={() => handlePageLink(link.path)}
-                className="px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 hover:bg-blue-50 relative group"
-                style={{ color: scrolled ? "hsl(var(--water-700))" : "rgba(255,255,255,0.85)" }}
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 relative group ${
+                  scrolled
+                    ? "text-water-700 hover:bg-water-50 hover:text-water-800"
+                    : "text-white/90 hover:bg-white/15 hover:text-white"
+                }`}
               >
                 {link.label}
               </button>
@@ -100,8 +144,11 @@ export default function Navbar() {
                   {isAdminOrEditor && (
                     <button
                       onClick={() => navigate("/admin")}
-                      className="ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 hover:bg-blue-50 flex items-center gap-1.5"
-                      style={{ color: scrolled ? "hsl(var(--water-700))" : "rgba(255,255,255,0.85)" }}
+                      className={`ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-1.5 ${
+                        scrolled
+                          ? "text-water-700 hover:bg-water-50 hover:text-water-800"
+                          : "text-white/90 hover:bg-white/15 hover:text-white"
+                      }`}
                     >
                       <LayoutDashboard className="w-4 h-4" /> Dashboard
                     </button>
@@ -109,29 +156,85 @@ export default function Navbar() {
                   {(isStaff || isAdmin) && (
                     <button
                       onClick={() => navigate("/staff/scanner")}
-                      className="ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 hover:bg-blue-50 flex items-center gap-1.5"
-                      style={{ color: scrolled ? "hsl(var(--water-700))" : "rgba(255,255,255,0.85)" }}
+                      className={`ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-1.5 ${
+                        scrolled
+                          ? "text-water-700 hover:bg-water-50 hover:text-water-800"
+                          : "text-white/90 hover:bg-white/15 hover:text-white"
+                      }`}
                     >
                       <ScanLine className="w-4 h-4" /> Escanear QR
                     </button>
                   )}
                   {/* Mi Cuenta NO visible para staff QR puro (no es cliente) */}
                   {!(isStaff && !isAdmin) && (
-                    <button
-                      onClick={() => navigate("/mi-cuenta")}
-                      className="ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 hover:bg-blue-50 flex items-center gap-1.5"
-                      style={{ color: scrolled ? "hsl(var(--water-700))" : "rgba(255,255,255,0.85)" }}
-                    >
-                      <UserCircle className="w-4 h-4" /> Mi Cuenta
-                    </button>
+                    <div ref={accountMenuRef} className="relative ml-2">
+                      <button
+                        type="button"
+                        onClick={() => setAccountMenuOpen((o) => !o)}
+                        aria-haspopup="menu"
+                        aria-expanded={accountMenuOpen}
+                        className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-1.5 ${
+                          scrolled
+                            ? `text-water-700 hover:bg-water-50 hover:text-water-800 ${accountMenuOpen ? "bg-water-50 text-water-800" : ""}`
+                            : `text-white/90 hover:bg-white/15 hover:text-white ${accountMenuOpen ? "bg-white/15 text-white" : ""}`
+                        }`}
+                      >
+                        <UserCircle className="w-4 h-4" />
+                        Mi Cuenta
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${accountMenuOpen ? "rotate-180" : ""}`} />
+                      </button>
+
+                      {/* Dropdown panel */}
+                      {accountMenuOpen && (
+                        <div
+                          role="menu"
+                          className="absolute right-0 top-full mt-2 w-56 origin-top-right z-[60]"
+                          style={{ animation: "account-menu-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                        >
+                          <div className="overflow-hidden rounded-2xl border border-white/60 bg-white/95 shadow-[0_12px_40px_-8px_rgba(0,60,130,0.25)] backdrop-blur-xl">
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => handleAccountAction("cuenta")}
+                              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-semibold text-water-800 transition-colors hover:bg-water-50/80 hover:text-water-900"
+                            >
+                              <UserCircle className="h-4 w-4 text-water-600" />
+                              Ir a mi cuenta
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => handleAccountAction("perfil")}
+                              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-semibold text-water-800 transition-colors hover:bg-water-50/80 hover:text-water-900"
+                            >
+                              <User className="h-4 w-4 text-water-600" />
+                              Perfil
+                            </button>
+                            <div className="my-0.5 mx-3 h-px bg-app-border/60" />
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => handleAccountAction("logout")}
+                              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50/80 hover:text-rose-700"
+                            >
+                              <LogOut className="h-4 w-4" />
+                              Cerrar sesión
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </>
               ) : (
                 <>
                   <button
                     onClick={() => navigate("/cliente/login")}
-                    className="ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 hover:bg-blue-50 flex items-center gap-1.5"
-                    style={{ color: scrolled ? "hsl(var(--water-700))" : "rgba(255,255,255,0.85)" }}
+                    className={`ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-1.5 ${
+                      scrolled
+                        ? "text-water-700 hover:bg-water-50 hover:text-water-800"
+                        : "text-white/90 hover:bg-white/15 hover:text-white"
+                    }`}
                   >
                     <LogIn className="w-4 h-4" /> Iniciar sesión
                   </button>

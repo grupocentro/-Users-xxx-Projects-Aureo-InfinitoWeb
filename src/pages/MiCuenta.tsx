@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -89,56 +89,152 @@ export default function MiCuenta() {
   const [compras, setCompras] = useState<Compra[]>([]);
   const [qrs, setQrs] = useState<QR[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [section, setSection] = useState<Section>("resumen");
+  // section inicial respeta ?section=perfil|mis-qr|... del query string (deep-link
+  // desde el dropdown "Mi Cuenta" del navbar).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSection: Section = (() => {
+    const s = searchParams.get("section") as Section | null;
+    return s && ["resumen", "mis-qr", "mis-compras", "perfil", "metodos-pago", "notificaciones", "ayuda"].includes(s) ? s : "resumen";
+  })();
+  const [section, setSection] = useState<Section>(initialSection);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedQR, setSelectedQR] = useState<SelectedQR | null>(null);
+
+  // Si el usuario navega entre secciones desde el dropdown del navbar, sincronizar
+  // el query param sin recargar (permite back/forward + compartir links).
+  useEffect(() => {
+    const current = searchParams.get("section");
+    if (section === "resumen" && current) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("section");
+      setSearchParams(next, { replace: true });
+    } else if (section !== "resumen" && current !== section) {
+      const next = new URLSearchParams(searchParams);
+      next.set("section", section);
+      setSearchParams(next, { replace: true });
+    }
+  }, [section, searchParams, setSearchParams]);
 
   const openQR = (qr: QR, tipo: string, compra: Compra | undefined, posicion?: number, total?: number) =>
     setSelectedQR({ qr, tipo, compra, posicion, total });
 
   // -------------------------------------------------------------------------
-  // Fetch de datos (lógica preservada del componente original)
+  // Fetch de datos — robusto: timeout, try/catch/finally, fail-open
   // -------------------------------------------------------------------------
+  // Reglas:
+  //  - El spinner sale en cuanto authLoading/roleLoading terminan y se intenta
+  //    fetch (success o error) — nunca queda colgado.
+  //  - Si profile falla (no existe el row), seguimos: usamos email del auth.
+  //  - Si compras/qrs fallan, mostramos cuenta vacía + opción de reintentar.
+  //  - Timeout duro de 10s: si Supabase nunca responde, mostramos error.
   useEffect(() => {
+    // Esperar a que auth+role terminen de cargar.
     if (authLoading || roleLoading) return;
-    if (!user) { navigate("/cliente/login?redirect=/mi-cuenta"); return; }
-    // Staff QR puro (control_entradas sin admin) NO ve dashboard cliente.
-    // Redirect directo al scanner — sus credenciales no son de visitante.
+
+    // Sin sesión → al login.
+    if (!user) {
+      navigate("/cliente/login?redirect=/mi-cuenta", { replace: true });
+      return;
+    }
+
+    // Staff QR puro → al scanner.
     if (isStaff && !isAdmin) {
       navigate("/staff/scanner", { replace: true });
       return;
     }
 
-    const fetchData = async () => {
-      const [profileRes, comprasRes] = await Promise.all([
-        supabase.from("profiles").select("nombre, apellido, email, whatsapp").eq("id", user.id).single(),
-        supabase
-          .from("compras")
-          .select("id, cantidad, total, estado_pago, created_at, fecha_visita, grupo_id, tipo_entrada_id, tipo_entrada:tipos_entrada(nombre, emoji)")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false }),
-      ]);
-
-      if (profileRes.data) setProfile(profileRes.data);
-      const comprasData = (comprasRes.data ?? []) as unknown as Compra[];
-      setCompras(comprasData);
-
-      const comprasIds = comprasData.map((c) => c.id);
-      if (comprasIds.length > 0) {
-        const { data: qrsData } = await supabase
-          .from("codigos_qr")
-          .select("id, uuid_code, usado, usado_at, compra_id")
-          .in("compra_id", comprasIds)
-          .order("created_at", { ascending: false });
-        if (qrsData) setQrs(qrsData);
-      } else {
-        setQrs([]);
+    let cancelled = false;
+    const timeoutMs = 10_000;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        setError("No pudimos cargar tu cuenta. Verificá tu conexión e intentá de nuevo.");
+        setLoading(false);
       }
-      setLoading(false);
+    }, timeoutMs);
+
+    const fetchData = async () => {
+      try {
+        // Profile + compras en paralelo. .maybeSingle() para no romper si no existe row.
+        const [profileRes, comprasRes] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("nombre, apellido, email, whatsapp")
+            .eq("id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("compras")
+            .select("id, cantidad, total, estado_pago, created_at, fecha_visita, grupo_id, tipo_entrada_id, tipo_entrada:tipos_entrada(nombre, emoji)")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false }),
+        ]);
+
+        if (cancelled) return;
+
+        // Profile: si no existe row, usar fallback con datos del auth.
+        if (profileRes.data) {
+          setProfile(profileRes.data);
+        } else {
+          if (profileRes.error) console.warn("MiCuenta: profile no se pudo leer:", profileRes.error.message);
+          // Fallback: derivar de auth.user — la UI sigue funcionando.
+          const meta = (user.user_metadata ?? {}) as { nombre?: string; apellido?: string; whatsapp?: string };
+          setProfile({
+            nombre: meta.nombre ?? "",
+            apellido: meta.apellido ?? "",
+            email: user.email ?? "",
+            whatsapp: meta.whatsapp ?? null,
+          });
+        }
+
+        // Compras: si falla, dejamos array vacío y seguimos.
+        const comprasData = comprasRes.error ? [] : ((comprasRes.data ?? []) as unknown as Compra[]);
+        if (comprasRes.error) console.warn("MiCuenta: compras no se pudieron leer:", comprasRes.error.message);
+        setCompras(comprasData);
+
+        // QRs sólo si hay compras.
+        const comprasIds = comprasData.map((c) => c.id);
+        if (comprasIds.length > 0) {
+          const { data: qrsData, error: qrsErr } = await supabase
+            .from("codigos_qr")
+            .select("id, uuid_code, usado, usado_at, compra_id")
+            .in("compra_id", comprasIds)
+            .order("created_at", { ascending: false });
+
+          if (cancelled) return;
+          if (qrsErr) console.warn("MiCuenta: qrs no se pudieron leer:", qrsErr.message);
+          setQrs(qrsData ?? []);
+        } else {
+          setQrs([]);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const msg = err instanceof Error ? err.message : "Error inesperado";
+        console.error("MiCuenta: fallo cargando datos:", msg);
+        setError(`No pudimos cargar tu cuenta: ${msg}`);
+      } finally {
+        // Crucial: el spinner SIEMPRE se apaga, haya success o fallo.
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
+      }
     };
+
     fetchData();
-  }, [user, authLoading, navigate]);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [user?.id, authLoading, roleLoading, isStaff, isAdmin, retryToken, navigate]);
+
+  const handleRetry = () => {
+    setError(null);
+    setLoading(true);
+    setRetryToken((t) => t + 1);
+  };
 
   // -------------------------------------------------------------------------
   // Datos derivados para los KPIs / resumen
@@ -206,6 +302,45 @@ export default function MiCuenta() {
     // Scroll al top en mobile
     if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // -------------------------------------------------------------------------
+  // Error state — nunca queda colgado el spinner.
+  // -------------------------------------------------------------------------
+  if (error && !loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-water-50 via-white to-water-100 px-4">
+        <div className="w-full max-w-md rounded-3xl border border-rose-200 bg-white p-8 shadow-lg text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50">
+            <X className="h-7 w-7 text-rose-600" />
+          </div>
+          <h2 className="text-xl font-black text-water-800">No pudimos cargar tu cuenta</h2>
+          <p className="mt-2 text-sm text-app-muted">{error}</p>
+          <div className="mt-6 grid gap-2 sm:grid-cols-3">
+            <Button
+              onClick={handleRetry}
+              className="h-11 rounded-2xl bg-gradient-to-r from-water-700 to-water-500 font-bold text-white"
+            >
+              Reintentar
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/")}
+              className="h-11 rounded-2xl border-2 font-bold"
+            >
+              Volver al inicio
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={async () => { await signOut(); navigate("/"); }}
+              className="h-11 rounded-2xl font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+            >
+              <LogOut className="mr-1.5 h-4 w-4" /> Cerrar sesión
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // -------------------------------------------------------------------------
   // Loading state premium
