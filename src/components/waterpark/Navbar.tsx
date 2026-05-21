@@ -3,6 +3,7 @@ import { Menu, X, UserCircle, LogIn, ScanLine, LayoutDashboard, ChevronDown, Use
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuthModal } from "@/components/auth/AuthModal";
 import infinitoLogo from "@/assets/infinito-logo.png";
 import flamingoMenu from "@/assets/flamingo-menu.png";
 
@@ -26,6 +27,7 @@ export default function Navbar() {
   const location = useLocation();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isStaff, isAdmin, isAdminOrEditor } = useUserRole();
+  const { openAuth } = useAuthModal();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -229,7 +231,7 @@ export default function Navbar() {
               ) : (
                 <>
                   <button
-                    onClick={() => navigate("/cliente/login")}
+                    onClick={() => openAuth({ mode: "login", redirect: "/mi-cuenta" })}
                     className={`ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-1.5 ${
                       scrolled
                         ? "text-water-700 hover:bg-water-50 hover:text-water-800"
@@ -239,7 +241,17 @@ export default function Navbar() {
                     <LogIn className="w-4 h-4" /> Iniciar sesión
                   </button>
                   <button
-                    onClick={() => navigate("/cliente/registro")}
+                    onClick={() => openAuth({ mode: "login", redirect: "/mi-cuenta" })}
+                    className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-1.5 ${
+                      scrolled
+                        ? "text-water-700 hover:bg-water-50 hover:text-water-800"
+                        : "text-white/90 hover:bg-white/15 hover:text-white"
+                    }`}
+                  >
+                    <UserCircle className="w-4 h-4" /> Mi Cuenta
+                  </button>
+                  <button
+                    onClick={() => openAuth({ mode: "register", redirect: "/mi-cuenta" })}
                     className="ml-1 px-5 py-2 rounded-xl text-sm font-black text-white transition-all hover:scale-105 hover:brightness-110"
                     style={{
                       background: "linear-gradient(135deg, hsl(var(--water-600)), hsl(var(--water-400)))",
@@ -361,7 +373,7 @@ export default function Navbar() {
             {!authLoading && !user && (
               <>
                 <button
-                  onClick={() => handlePageLink("/cliente/login")}
+                  onClick={() => { setIsOpen(false); openAuth({ mode: "login", redirect: "/mi-cuenta" }); }}
                   className="flex items-center gap-2 w-full text-left px-4 py-3.5 rounded-2xl font-bold text-base transition-all duration-200 hover:bg-blue-50"
                   style={{
                     color: "hsl(var(--water-800))",
@@ -372,7 +384,18 @@ export default function Navbar() {
                   <LogIn className="w-5 h-5" /> Iniciar sesión
                 </button>
                 <button
-                  onClick={() => handlePageLink("/cliente/registro")}
+                  onClick={() => { setIsOpen(false); openAuth({ mode: "login", redirect: "/mi-cuenta" }); }}
+                  className="flex items-center gap-2 w-full text-left px-4 py-3.5 rounded-2xl font-bold text-base transition-all duration-200 hover:bg-blue-50"
+                  style={{
+                    color: "hsl(var(--water-800))",
+                    opacity: isOpen ? 1 : 0,
+                    transition: "opacity 0.3s ease 0.33s",
+                  }}
+                >
+                  <UserCircle className="w-5 h-5" /> Mi Cuenta
+                </button>
+                <button
+                  onClick={() => { setIsOpen(false); openAuth({ mode: "register", redirect: "/mi-cuenta" }); }}
                   className="flex items-center gap-2 w-full text-left px-4 py-3.5 rounded-2xl font-bold text-base transition-all duration-200 hover:bg-blue-50"
                   style={{
                     color: "hsl(var(--water-600))",

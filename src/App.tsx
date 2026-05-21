@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthModalProvider } from "@/components/auth/AuthModal";
 
 // Página principal: eager para que el primer paint del sitio sea instantáneo.
 import Index from "./pages/Index";
@@ -73,6 +74,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthModalProvider>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Públicas */}
@@ -168,6 +170,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        </AuthModalProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
