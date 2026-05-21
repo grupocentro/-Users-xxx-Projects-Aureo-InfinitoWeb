@@ -78,7 +78,10 @@ const App = () => (
             {/* Públicas */}
             <Route path="/" element={<Index />} />
             <Route path="/eventos" element={<Eventos />} />
-            <Route path="/login" element={<Login />} />
+            {/* Acceso interno (PIN + triple panel). Reemplaza al antiguo /login. */}
+            <Route path="/sistemas" element={<Login />} />
+            {/* Legacy: /login redirige al nuevo path para no romper bookmarks */}
+            <Route path="/login" element={<Navigate to="/sistemas" replace />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Cliente (visitantes) — flujo separado del login interno */}

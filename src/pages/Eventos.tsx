@@ -89,6 +89,7 @@ function TimelineItem({ event, past, index, onDetail, onComprar }: {
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.1 });
@@ -98,6 +99,7 @@ function TimelineItem({ event, past, index, onDetail, onComprar }: {
 
   const gradient = event.gradiente || "linear-gradient(135deg, #0077B6 0%, #00B4D8 100%)";
   const firstColor = gradient.match(/#[A-Fa-f0-9]{6}/g)?.[0] || '#0077B6';
+  const hasImage = !!event.imagen_url && event.imagen_url.trim() !== "" && !imgError;
 
   return (
     <div
@@ -148,13 +150,14 @@ function TimelineItem({ event, past, index, onDetail, onComprar }: {
         onClick={onDetail}
       >
         {/* Image */}
-        {event.imagen_url && (
+        {hasImage && (
           <div className="relative h-36 sm:h-44 lg:h-52 overflow-hidden">
             <img
-              src={event.imagen_url}
+              src={event.imagen_url!}
               alt={event.nombre}
               className={`w-full h-full object-cover transition-transform duration-500 ${past ? "" : "group-hover:scale-105"}`}
               loading="lazy"
+              onError={() => setImgError(true)}
               style={past ? { filter: "grayscale(0.8) brightness(0.7)" } : {}}
             />
             <div
@@ -268,7 +271,10 @@ function EventDetail({ event, open, onClose }: { event: Evento | null; open: boo
   const { user } = useAuth();
   const { toast } = useToast();
   const [isDesktop, setIsDesktop] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const past = event ? isEventPast(event.fecha) : false;
+
+  useEffect(() => { setImgError(false); }, [event?.id]);
 
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 1024px)");
@@ -283,7 +289,7 @@ function EventDetail({ event, open, onClose }: { event: Evento | null; open: boo
   const handleComprar = () => {
     if (!user) {
       toast({ title: "Iniciá sesión", description: "Necesitás una cuenta para comprar accesos.", variant: "destructive" });
-      navigate("/login");
+      navigate(`/cliente/login?redirect=${encodeURIComponent(`/comprar?entrada=evento&evento_id=${event.id}`)}`);
       return;
     }
     navigate(`/comprar?entrada=evento&evento_id=${event.id}`);
@@ -294,8 +300,13 @@ function EventDetail({ event, open, onClose }: { event: Evento | null; open: boo
   const content = (
     <>
       <div className="relative" style={{ height: isDesktop ? 300 : 220, zIndex: 0 }}>
-        {event.imagen_url ? (
-          <img src={event.imagen_url} alt={event.nombre} className="w-full h-full object-cover" />
+        {event.imagen_url && event.imagen_url.trim() !== "" && !imgError ? (
+          <img
+            src={event.imagen_url}
+            alt={event.nombre}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
         ) : (
           <div className="w-full h-full" style={{ background: gradient }} />
         )}
@@ -417,7 +428,7 @@ export default function Eventos() {
     e.stopPropagation();
     if (!user) {
       toast({ title: "Iniciá sesión", description: "Necesitás una cuenta para comprar accesos.", variant: "destructive" });
-      navigate("/login");
+      navigate(`/cliente/login?redirect=${encodeURIComponent(`/comprar?entrada=evento&evento_id=${event.id}`)}`);
       return;
     }
     navigate(`/comprar?entrada=evento&evento_id=${event.id}`);

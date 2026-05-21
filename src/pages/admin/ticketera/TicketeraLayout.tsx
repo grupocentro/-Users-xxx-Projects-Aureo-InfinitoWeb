@@ -16,7 +16,7 @@ export default function TicketeraLayout() {
   useEffect(() => {
     if (authLoading || roleLoading) return;
     if (!user) {
-      navigate("/login");
+      navigate("/sistemas");
       return;
     }
     // Modo Ticketera es admin-only: editor no entra acá (rebota al selector).

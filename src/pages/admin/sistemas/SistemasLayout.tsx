@@ -16,7 +16,7 @@ export default function SistemasLayout() {
   useEffect(() => {
     if (authLoading || roleLoading) return;
     if (!user) {
-      navigate("/login");
+      navigate("/sistemas");
       return;
     }
     // Panel Sistemas es admin-only. Editor y staff rebotan al selector.

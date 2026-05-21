@@ -16,7 +16,7 @@ export default function WebLayout() {
   useEffect(() => {
     if (authLoading || roleLoading) return;
     if (!user) {
-      navigate("/login");
+      navigate("/sistemas");
       return;
     }
     if (!isAdminOrEditor) {

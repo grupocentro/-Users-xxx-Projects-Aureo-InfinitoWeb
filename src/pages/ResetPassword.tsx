@@ -45,7 +45,7 @@ export default function ResetPassword() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Contraseña actualizada" });
-      navigate("/login");
+      navigate("/cliente/login");
     }
     setLoading(false);
   };
@@ -77,7 +77,7 @@ export default function ResetPassword() {
               </div>
               <Button type="submit" className="w-full" disabled={loading}>{loading ? "Enviando..." : "Enviar Link"}</Button>
               <p className="text-center text-sm text-muted-foreground">
-                <Link to="/login" className="text-primary hover:underline">Volver al login</Link>
+                <Link to="/cliente/login" className="text-primary hover:underline">Volver al login</Link>
               </p>
             </form>
           )}

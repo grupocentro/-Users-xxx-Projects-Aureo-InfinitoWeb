@@ -30,7 +30,7 @@ export default function AdminSelector() {
 
   useEffect(() => {
     if (authLoading || roleLoading) return;
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/sistemas"); return; }
     // Staff (control_entradas) salta directo a scanner.
     if (isStaff && !isAdmin) { navigate("/staff/scanner"); return; }
     // Sin ningún rol válido: vuelta al home.

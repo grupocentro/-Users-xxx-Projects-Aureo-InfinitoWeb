@@ -51,6 +51,7 @@ function EventCard({ event, index, onClick }: { event: Evento; index: number; on
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.15 });
@@ -61,6 +62,7 @@ function EventCard({ event, index, onClick }: { event: Evento; index: number; on
   const gradient = event.gradiente || "linear-gradient(135deg, #0077B6 0%, #00B4D8 100%)";
   const firstColor = gradient.match(/#[A-Fa-f0-9]{6}/g)?.[0] || '#000';
   const statusLabel = event.estado === "activo" ? "Confirmado" : "Próximamente";
+  const hasImage = !!event.imagen_url && event.imagen_url.trim() !== "" && !imgError;
 
   return (
     <div
@@ -78,7 +80,17 @@ function EventCard({ event, index, onClick }: { event: Evento; index: number; on
       onMouseLeave={() => setHovered(false)}
       onClick={onClick}
     >
-      <img src={event.imagen_url || ''} alt={event.nombre} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+      {hasImage ? (
+        <img
+          src={event.imagen_url!}
+          alt={event.nombre}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div className="absolute inset-0" style={{ background: gradient }} />
+      )}
       <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${firstColor} 0%, ${firstColor}cc 35%, transparent 60%)` }} />
       <div className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity duration-700" style={{ background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)", backgroundSize: "200% auto", animation: "shimmer-gold 2.5s linear infinite" }} />
       <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)" }} />

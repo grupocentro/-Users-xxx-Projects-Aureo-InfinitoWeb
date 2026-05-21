@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,8 +44,8 @@ type ValidarQrResponse = {
 // =============================================================================
 type Variant = "ok" | "warn" | "error";
 
-const RESULTADO_CONFIG: Record<ValidacionResultado, { variant: Variant; emoji: string; titulo: string }> = {
-  valido:              { variant: "ok",    emoji: "✅", titulo: "Entrada válida" },
+const RESULTADO_CONFIG: Record<ValidacionResultado, { variant: Variant; emoji: string; titulo: string; welcome?: string }> = {
+  valido:              { variant: "ok",    emoji: "✅", titulo: "Entrada válida",     welcome: "Bienvenido a Infinito Water Park" },
   ya_usado:            { variant: "warn",  emoji: "⚠️", titulo: "QR ya utilizado" },
   no_encontrado:       { variant: "error", emoji: "❌", titulo: "QR no encontrado" },
   compra_no_aprobada:  { variant: "error", emoji: "❌", titulo: "Compra no aprobada" },
@@ -53,10 +53,38 @@ const RESULTADO_CONFIG: Record<ValidacionResultado, { variant: Variant; emoji: s
   error:               { variant: "error", emoji: "⚠️", titulo: "Error al validar" },
 };
 
-const VARIANT_CLASS: Record<Variant, string> = {
-  ok:    "border-green-500 bg-green-50",
-  warn:  "border-yellow-500 bg-yellow-50",
-  error: "border-destructive bg-red-50",
+const VARIANT_THEME: Record<Variant, {
+  gradient: string;
+  ringColor: string;
+  glowColor: string;
+  iconColor: string;
+  accentText: string;
+  bgSoft: string;
+}> = {
+  ok: {
+    gradient:   "from-emerald-400 via-green-500 to-emerald-600",
+    ringColor:  "ring-emerald-400/60",
+    glowColor:  "rgba(16, 185, 129, 0.55)",
+    iconColor:  "text-emerald-600",
+    accentText: "text-emerald-700",
+    bgSoft:     "bg-emerald-50",
+  },
+  warn: {
+    gradient:   "from-amber-400 via-yellow-500 to-amber-600",
+    ringColor:  "ring-amber-400/60",
+    glowColor:  "rgba(245, 158, 11, 0.55)",
+    iconColor:  "text-amber-600",
+    accentText: "text-amber-700",
+    bgSoft:     "bg-amber-50",
+  },
+  error: {
+    gradient:   "from-rose-500 via-red-500 to-rose-600",
+    ringColor:  "ring-rose-400/60",
+    glowColor:  "rgba(244, 63, 94, 0.55)",
+    iconColor:  "text-rose-600",
+    accentText: "text-rose-700",
+    bgSoft:     "bg-rose-50",
+  },
 };
 
 // Patrones de vibración (mobile only)
@@ -81,6 +109,30 @@ function detectDeviceType(): "mobile" | "tablet" | "desktop" {
 }
 
 // =============================================================================
+// DetailRow — helper visual de cada línea del resultado del scanner.
+// =============================================================================
+function DetailRow({
+  icon: Icon, label, value, accent,
+}: {
+  icon: typeof CheckCircle2;
+  label: string;
+  value: ReactNode;
+  accent: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-app-border bg-white px-3 py-2.5">
+      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-water-50 text-water-600">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <div className={`text-sm font-bold ${accent}`}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Componente
 // =============================================================================
 export default function Scanner() {
@@ -99,7 +151,7 @@ export default function Scanner() {
 
   useEffect(() => {
     if (authLoading || roleLoading) return;
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/sistemas"); return; }
     if (!isAdmin && !isStaff) { navigate("/"); }
   }, [user, isAdmin, isStaff, authLoading, roleLoading, navigate]);
 
@@ -309,65 +361,134 @@ export default function Scanner() {
           </CardContent>
         </Card>
 
-        {/* Result */}
-        {result && cfg && (
-          <Card className={`border-2 ${VARIANT_CLASS[cfg.variant]}`}>
-            <CardContent className="p-6">
-              <div className="text-center mb-4">
-                <div className="flex items-center justify-center mb-2">
-                  {cfg.variant === "ok" && <CheckCircle2 className="w-14 h-14 text-green-600" />}
-                  {cfg.variant === "warn" && <AlertTriangle className="w-14 h-14 text-yellow-600" />}
-                  {cfg.variant === "error" && <XCircle className="w-14 h-14 text-destructive" />}
+        {/* Result — premium */}
+        {result && cfg && (() => {
+          const theme = VARIANT_THEME[cfg.variant];
+          const now = result.usado_at ? new Date(result.usado_at) : new Date();
+          return (
+            <>
+              <style>{`
+                @keyframes scanner-reveal {
+                  0%   { opacity: 0; transform: translateY(16px) scale(0.96); }
+                  100% { opacity: 1; transform: translateY(0)    scale(1);    }
+                }
+                @keyframes scanner-glow-pulse {
+                  0%, 100% { box-shadow: 0 0 0 0 var(--glow-color), 0 12px 40px -8px var(--glow-color); }
+                  50%      { box-shadow: 0 0 24px 4px var(--glow-color), 0 18px 56px -8px var(--glow-color); }
+                }
+                @keyframes scanner-icon-pop {
+                  0%   { opacity: 0; transform: scale(0.4) rotate(-12deg); }
+                  60%  { opacity: 1; transform: scale(1.12) rotate(4deg); }
+                  100% { opacity: 1; transform: scale(1)   rotate(0deg); }
+                }
+              `}</style>
+              <div
+                className={`relative overflow-hidden rounded-3xl bg-white ring-2 ${theme.ringColor}`}
+                style={{
+                  ["--glow-color" as string]: theme.glowColor,
+                  animation: "scanner-reveal 0.45s cubic-bezier(0.22, 1, 0.36, 1), scanner-glow-pulse 2.4s ease-in-out infinite",
+                }}
+              >
+                {/* Banner superior con gradient */}
+                <div className={`relative px-6 py-7 text-white bg-gradient-to-br ${theme.gradient}`}>
+                  {/* Brillo decorativo */}
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl" />
+                  <div className="pointer-events-none absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+
+                  <div className="relative flex flex-col items-center text-center">
+                    <div
+                      className="mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-white/95 shadow-2xl"
+                      style={{ animation: "scanner-icon-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+                    >
+                      {cfg.variant === "ok"    && <CheckCircle2  className={`h-12 w-12 ${theme.iconColor}`} />}
+                      {cfg.variant === "warn"  && <AlertTriangle className={`h-12 w-12 ${theme.iconColor}`} />}
+                      {cfg.variant === "error" && <XCircle       className={`h-12 w-12 ${theme.iconColor}`} />}
+                    </div>
+                    {cfg.welcome && cfg.variant === "ok" && (
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/80">
+                        🎉 {cfg.welcome}
+                      </p>
+                    )}
+                    <h2 className="mt-1 text-2xl font-black drop-shadow-sm sm:text-3xl">
+                      {cfg.titulo}
+                    </h2>
+                    <p className="mt-1 max-w-xs text-sm font-medium text-white/90">{result.mensaje}</p>
+                  </div>
                 </div>
-                <p className="text-2xl font-black mb-1">{cfg.emoji} {cfg.titulo}</p>
-                <p className="text-sm text-muted-foreground">{result.mensaje}</p>
-              </div>
 
-              {/* Detalles según corresponda */}
-              <div className="space-y-2 text-sm">
-                {result.comprador_nombre && (
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Comprador:</span>
-                    <span className="font-medium">{result.comprador_nombre}</span>
-                  </div>
-                )}
-                {result.tipo_entrada && (
-                  <div className="flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Entrada:</span>
-                    <span className="font-medium">{result.tipo_entrada}</span>
-                  </div>
-                )}
-                {result.fecha_visita && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Fecha visita:</span>
-                    <span className="font-medium">{result.fecha_visita}</span>
-                  </div>
-                )}
-                {result.estado_pago && result.resultado === "compra_no_aprobada" && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Estado pago:</span>
-                    <span className="font-medium uppercase">{result.estado_pago}</span>
-                  </div>
-                )}
-                {result.ya_usado_at && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Usado el:</span>
-                    <span className="font-medium">
-                      {new Date(result.ya_usado_at).toLocaleString("es-AR")}
-                    </span>
-                  </div>
-                )}
-              </div>
+                {/* Detalles */}
+                <div className="space-y-2.5 px-6 py-5">
+                  {result.comprador_nombre && (
+                    <DetailRow icon={User} label="Comprador" value={result.comprador_nombre} accent={theme.accentText} />
+                  )}
+                  {result.tipo_entrada && (
+                    <DetailRow
+                      icon={Ticket}
+                      label="Entrada"
+                      value={
+                        <span>
+                          {result.tipo_entrada}
+                          {result.cantidad && result.cantidad > 1 && (
+                            <span className="ml-1.5 inline-flex items-center rounded-full bg-water-100 px-2 py-0.5 text-[10px] font-bold text-water-700">
+                              × {result.cantidad}
+                            </span>
+                          )}
+                        </span>
+                      }
+                      accent={theme.accentText}
+                    />
+                  )}
+                  {result.fecha_visita && (
+                    <DetailRow
+                      icon={Calendar}
+                      label="Fecha visita"
+                      value={
+                        <span className="capitalize">
+                          {new Date(result.fecha_visita + "T12:00:00").toLocaleDateString("es-AR", {
+                            weekday: "long", day: "numeric", month: "long",
+                          })}
+                        </span>
+                      }
+                      accent={theme.accentText}
+                    />
+                  )}
+                  {result.resultado === "valido" && (
+                    <DetailRow
+                      icon={CheckCircle2}
+                      label="Hora de acceso"
+                      value={now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                      accent={theme.accentText}
+                    />
+                  )}
+                  {result.estado_pago && result.resultado === "compra_no_aprobada" && (
+                    <div className={`flex items-center justify-between rounded-xl ${theme.bgSoft} px-3 py-2`}>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Estado pago</span>
+                      <span className={`text-sm font-bold uppercase ${theme.accentText}`}>{result.estado_pago}</span>
+                    </div>
+                  )}
+                  {result.ya_usado_at && (
+                    <div className={`rounded-xl ${theme.bgSoft} px-3 py-2.5`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Acceso anterior</p>
+                      <p className={`mt-0.5 text-sm font-bold ${theme.accentText}`}>
+                        {new Date(result.ya_usado_at).toLocaleString("es-AR", {
+                          day: "2-digit", month: "2-digit", year: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-              <Button variant="outline" className="w-full mt-5 h-11 text-base" onClick={handleClear}>
-                Escanear otro
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+                {/* CTA */}
+                <div className="px-6 pb-6">
+                  <Button variant="outline" className="h-12 w-full rounded-2xl border-2 text-base font-bold" onClick={handleClear}>
+                    Escanear otro
+                  </Button>
+                </div>
+              </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   );

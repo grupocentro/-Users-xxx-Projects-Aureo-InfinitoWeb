@@ -1,147 +1,495 @@
-import { useNavigate } from "react-router-dom";
+import { useState, type ReactNode } from "react";
 import {
-  Users, Shield, UserCog, Briefcase, Lock, Settings,
-  ArrowRight, Cpu, type LucideIcon,
+  ExternalLink, ArrowUpRight, Phone, Hotel, Sparkles, Users, ShieldCheck, Gauge,
+  Lock, Activity, Cpu, Radio, type LucideIcon,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import eventosHeroBg from "@/assets/eventos-hero-bg.jpg";
+import infinitoLogoWhite from "@/assets/infinito-logo-white.png";
 
 // =============================================================================
-// Panel Sistemas — Dashboard inicial con 6 módulos placeholder
+// Panel Sistemas — HUB premium SaaS enterprise
 // =============================================================================
-// Esta vista es la puerta de entrada al "Panel Sistemas" (admin-only).
-// Los 6 módulos están listados pero ninguno tiene CRUD funcional todavía.
-// Las rutas internas montan el mismo dashboard (no rompemos navegación al
-// hacer click en items del sidebar).
+// Grid 3×2 con 6 sistemas: 1 activo real (Call Center) + 5 placeholders.
+// Estilo: ecosistema operativo del parque, paleta water + violet + grafito.
 // =============================================================================
 
-interface ModuleCard {
+interface SystemDef {
+  key: string;
   title: string;
+  subtitle: string;
   description: string;
   icon: LucideIcon;
-  path: string;
-  status: "active" | "planned";
-  gradient: string;
-  iconBg: string;
+  /** Tono de acento de la card (clases tailwind aproximadas) */
+  accentFrom: string;
+  accentTo: string;
+  /** Color hex del glow (sin alpha) */
+  glow: string;
 }
 
-const MODULES: ModuleCard[] = [
+interface ActiveSystem extends SystemDef {
+  status: "active";
+  url: string;
+  bannerPublic?: string;
+}
+
+interface DevSystem extends SystemDef {
+  status: "dev";
+}
+
+type System = ActiveSystem | DevSystem;
+
+const SYSTEMS: System[] = [
+  // ── 1. ACTIVO REAL ────────────────────────────────────────────────────────
   {
-    title: "Usuarios",
-    description: "Gestión de cuentas con acceso al sistema.",
+    key: "call-center",
+    title: "Sistema de Call Center",
+    subtitle: "Gestión de llamadas por WhatsApp",
+    description: "Centro operativo de atención, llamadas y contactos del parque.",
+    icon: Phone,
+    accentFrom: "from-water-500",
+    accentTo: "to-water-700",
+    glow: "rgba(0, 150, 200, 0.45)",
+    status: "active",
+    url: "https://sistemasinfinito.online",
+    bannerPublic: "/call-center-banner.png",
+  },
+  // ── 2–6. PLACEHOLDERS PREMIUM ────────────────────────────────────────────
+  {
+    key: "hotelero",
+    title: "Sistema Operativo Hotelero",
+    subtitle: "Reservas, habitaciones y check-in",
+    description: "Gestión integral del alojamiento dentro del parque.",
+    icon: Hotel,
+    accentFrom: "from-indigo-500",
+    accentTo: "to-indigo-700",
+    glow: "rgba(99, 102, 241, 0.35)",
+    status: "dev",
+  },
+  {
+    key: "eventos",
+    title: "Gestión Inteligente de Eventos",
+    subtitle: "Producción, lineup y operativo",
+    description: "Planificación y ejecución de eventos del calendario.",
+    icon: Sparkles,
+    accentFrom: "from-fuchsia-500",
+    accentTo: "to-fuchsia-700",
+    glow: "rgba(217, 70, 239, 0.35)",
+    status: "dev",
+  },
+  {
+    key: "rrhh",
+    title: "Plataforma de RRHH",
+    subtitle: "Equipos, turnos y nómina",
+    description: "Gestión del personal del parque y operativos.",
     icon: Users,
-    path: "/admin/sistemas/usuarios",
-    status: "planned",
-    gradient: "from-violet-500/20 to-violet-700/30",
-    iconBg:   "from-violet-400 to-violet-600",
+    accentFrom: "from-violet-500",
+    accentTo: "to-violet-700",
+    glow: "rgba(139, 92, 246, 0.35)",
+    status: "dev",
   },
   {
-    title: "Roles",
-    description: "Asignación y revisión de roles del sistema.",
-    icon: Shield,
-    path: "/admin/sistemas/roles",
-    status: "planned",
-    gradient: "from-indigo-500/20 to-indigo-700/30",
-    iconBg:   "from-indigo-400 to-indigo-600",
+    key: "seguridad",
+    title: "Centro de Seguridad",
+    subtitle: "Auditoría, accesos y monitoreo",
+    description: "Vigilancia digital y políticas internas.",
+    icon: ShieldCheck,
+    accentFrom: "from-blue-500",
+    accentTo: "to-blue-700",
+    glow: "rgba(59, 130, 246, 0.35)",
+    status: "dev",
   },
   {
-    title: "Personal",
-    description: "Operarios, supervisores y staff del parque.",
-    icon: UserCog,
-    path: "/admin/sistemas/personal",
-    status: "planned",
-    gradient: "from-fuchsia-500/20 to-fuchsia-700/30",
-    iconBg:   "from-fuchsia-400 to-fuchsia-600",
-  },
-  {
-    title: "Administración",
-    description: "Configuración interna del negocio.",
-    icon: Briefcase,
-    path: "/admin/sistemas/administracion",
-    status: "planned",
-    gradient: "from-violet-500/20 to-indigo-700/30",
-    iconBg:   "from-violet-500 to-indigo-700",
-  },
-  {
-    title: "Seguridad",
-    description: "Auditoría, accesos y políticas de seguridad.",
-    icon: Lock,
-    path: "/admin/sistemas/seguridad",
-    status: "planned",
-    gradient: "from-blue-500/20 to-violet-700/30",
-    iconBg:   "from-blue-400 to-violet-600",
-  },
-  {
-    title: "Configuración",
-    description: "Parámetros generales del sistema.",
-    icon: Settings,
-    path: "/admin/sistemas/configuracion",
-    status: "planned",
-    gradient: "from-slate-500/20 to-indigo-700/30",
-    iconBg:   "from-slate-400 to-indigo-600",
+    key: "control",
+    title: "Control Operativo General",
+    subtitle: "Mission control del parque",
+    description: "KPIs cruzados, alertas y comando central.",
+    icon: Gauge,
+    accentFrom: "from-emerald-500",
+    accentTo: "to-emerald-700",
+    glow: "rgba(16, 185, 129, 0.35)",
+    status: "dev",
   },
 ];
 
-export default function SistemasDashboard() {
-  const navigate = useNavigate();
+// ──────────────────────────────────────────────────────────────────────────────
+// Métricas del header
+// ──────────────────────────────────────────────────────────────────────────────
+function MetricChip({
+  icon, label, value, dotColor, pulse,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  dotColor: string;
+  pulse?: boolean;
+}) {
+  return (
+    <div className="group inline-flex items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white/80 px-3.5 py-2 shadow-sm backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
+      <span className="relative flex h-2 w-2 items-center justify-center">
+        <span
+          className="absolute inset-0 rounded-full"
+          style={{ background: dotColor, opacity: 0.35 }}
+        />
+        <span
+          className="relative h-2 w-2 rounded-full"
+          style={{
+            background: dotColor,
+            boxShadow: `0 0 8px ${dotColor}`,
+            animation: pulse ? "metric-pulse 2.2s ease-in-out infinite" : "none",
+          }}
+        />
+      </span>
+      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        {icon}
+        {label}
+      </span>
+      <span className="text-sm font-bold text-water-800">{value}</span>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Card del sistema ACTIVO (Call Center) — banner + body
+// ──────────────────────────────────────────────────────────────────────────────
+function ActiveSystemCard({ system }: { system: ActiveSystem }) {
+  const [imgError, setImgError] = useState(false);
+  const Icon = system.icon;
+  const hasCustomBanner = !!system.bannerPublic && !imgError;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700">
-            <Cpu className="h-3 w-3" /> Sistemas internos
+    <a
+      href={system.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-water-200/70 bg-white shadow-[0_4px_24px_-8px_rgba(0,119,182,0.18)] transition-all duration-500 hover:-translate-y-1 hover:border-water-300 hover:shadow-[0_20px_60px_-15px_rgba(0,119,182,0.35)]"
+      style={{
+        // Glow base que se intensifica en hover via :hover en clase de abajo
+      }}
+    >
+      {/* Glow exterior animado (hover) */}
+      <div
+        className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+        style={{
+          background: `radial-gradient(ellipse at top, ${system.glow}, transparent 70%)`,
+        }}
+      />
+
+      {/* ── Banner ─────────────────────────────────────────────────── */}
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 8" }}>
+        {/* Capa 1: fondo acuático fallback */}
+        <img
+          src={eventosHeroBg}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        {/* Capa 2: overlay premium azul/turquesa */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, hsl(var(--water-800) / 0.82) 0%, hsl(var(--water-600) / 0.70) 55%, hsl(var(--water-500) / 0.55) 100%)",
+          }}
+        />
+        {/* Capa 3: imagen propia si existe */}
+        {hasCustomBanner && (
+          <img
+            src={system.bannerPublic}
+            alt={system.title}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            onError={() => setImgError(true)}
+            loading="lazy"
+          />
+        )}
+        {/* Capa 4: shimmer sutil al hover */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-100"
+          style={{
+            background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%)",
+            backgroundSize: "220% 100%",
+            animation: "shimmer-premium 3.5s linear infinite",
+          }}
+        />
+        {/* Capa 5: gradient inferior para legibilidad de texto */}
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/40 to-transparent" />
+
+        {/* Top-left: brand + status */}
+        <div className="absolute left-5 right-5 top-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25 backdrop-blur-md">
+              <img src={infinitoLogoWhite} alt="Infinito" className="h-5 w-5 object-contain" />
+            </div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
+              Infinito Water Park
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-water-800">Panel Sistemas</h1>
-          <p className="mt-1 max-w-2xl text-sm text-app-muted">
-            Administración interna avanzada del parque: cuentas, roles, personal, seguridad y configuración. Los módulos están en preparación; cada uno se habilitará en una fase futura autorizada.
+          {/* Status pill ONLINE */}
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2.5 py-1 backdrop-blur-md">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inset-0 animate-ping rounded-full bg-emerald-300 opacity-70" />
+              <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-300" style={{ boxShadow: "0 0 8px #6ee7b7" }} />
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-100">ONLINE</span>
+          </div>
+        </div>
+
+        {/* Bottom: title + subtitle */}
+        <div className="absolute inset-x-5 bottom-5">
+          <h3
+            className="font-black leading-tight text-white"
+            style={{ fontSize: "clamp(1.45rem, 2vw, 1.85rem)", textShadow: "0 2px 14px rgba(0,0,0,0.45)" }}
+          >
+            {system.title}
+          </h3>
+          <p
+            className="mt-1 text-sm font-medium text-white/85"
+            style={{ textShadow: "0 1px 8px rgba(0,0,0,0.35)" }}
+          >
+            {system.subtitle}
           </p>
         </div>
       </div>
 
-      {/* Grid de módulos */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {MODULES.map((m) => (
-          <button
-            key={m.path}
-            type="button"
-            onClick={() => navigate(m.path)}
-            className="group relative overflow-hidden rounded-3xl border border-violet-100 bg-white p-6 text-left transition-all hover:-translate-y-1 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-500/10"
-          >
-            <div className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br ${m.gradient} blur-3xl transition-opacity duration-300 group-hover:opacity-90`} />
-            <div className="relative">
-              <div className="mb-4 flex items-start justify-between">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${m.iconBg} text-white shadow-lg`}>
-                  <m.icon className="h-5 w-5" />
-                </div>
-                <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-violet-700">
-                  Próximamente
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-water-800">{m.title}</h3>
-              <p className="mt-1 text-sm text-app-muted">{m.description}</p>
-              <div className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-violet-600 transition-transform duration-300 group-hover:translate-x-1">
-                Abrir módulo <ArrowRight className="h-3.5 w-3.5" />
-              </div>
-            </div>
-          </button>
-        ))}
+      {/* ── Body ───────────────────────────────────────────────────── */}
+      <div className="relative flex flex-1 flex-col gap-4 p-5 sm:p-6">
+        {/* Badges */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+            <Activity className="h-2.5 w-2.5" /> Activo
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-water-200 bg-water-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-water-700">
+            <Radio className="h-2.5 w-2.5" /> Sistema independiente
+          </span>
+        </div>
+
+        {/* Descripción + dominio */}
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-water-50 text-water-600 ring-1 ring-water-200">
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-app-muted">{system.description}</p>
+            <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-water-700">
+              <ExternalLink className="h-3 w-3" /> {system.url.replace(/^https?:\/\//, "")}
+            </p>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <span
+          className="mt-auto inline-flex items-center justify-center gap-2 self-stretch rounded-2xl bg-gradient-to-br from-water-700 to-water-500 px-5 py-3 text-sm font-bold text-white shadow-md transition-all duration-300 group-hover:scale-[1.02] group-hover:brightness-110"
+          style={{ boxShadow: `0 8px 28px ${system.glow}` }}
+        >
+          Abrir sistema <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </span>
+      </div>
+    </a>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Card placeholder (En desarrollo) — bloqueada, glass + blur, lock icon
+// ──────────────────────────────────────────────────────────────────────────────
+function DevSystemCard({ system }: { system: DevSystem }) {
+  const Icon = system.icon;
+  return (
+    <div
+      role="group"
+      aria-disabled="true"
+      className="group relative flex h-full select-none flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-slate-100/60 shadow-sm transition-all duration-500 hover:-translate-y-0.5 hover:border-slate-300/80"
+    >
+      {/* Glow apagado al hover */}
+      <div
+        className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+        style={{
+          background: `radial-gradient(ellipse at top, ${system.glow.replace(/0\.\d+\)/, "0.15)")}, transparent 70%)`,
+        }}
+      />
+
+      {/* ── Banner gris tecnológico ────────────────────────────────── */}
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 8" }}>
+        {/* Gradiente base apagado */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, hsl(220 15% 28%) 0%, hsl(220 12% 38%) 55%, hsl(220 10% 48%) 100%)",
+          }}
+        />
+        {/* Dotted grid tecnológico */}
+        <div
+          className="absolute inset-0 opacity-25"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.25) 1px, transparent 0)",
+            backgroundSize: "18px 18px",
+          }}
+        />
+        {/* Líneas suaves diagonales */}
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            background:
+              "linear-gradient(115deg, transparent 0%, transparent 49.5%, rgba(255,255,255,0.08) 50%, transparent 50.5%, transparent 100%)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+        {/* Glow apagado del color del sistema */}
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{
+            background: `radial-gradient(circle at 30% 30%, ${system.glow}, transparent 60%)`,
+          }}
+        />
+        {/* Blur sutil sobre todo el banner */}
+        <div className="absolute inset-0 backdrop-blur-[1px]" />
+
+        {/* Lock central */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur-md">
+            <Lock className="h-6 w-6 text-white/75" />
+          </div>
+        </div>
+
+        {/* Status pill EN DESARROLLO */}
+        <div className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-500/15 px-2.5 py-1 backdrop-blur-md">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-300" style={{ boxShadow: "0 0 6px #fcd34d" }} />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100">En desarrollo</span>
+        </div>
       </div>
 
-      <Card className="border-violet-100 bg-gradient-to-br from-violet-50/40 via-white to-white">
-        <CardContent className="flex flex-col gap-1 px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-violet-700">Nota</p>
-          <p className="text-sm text-app-muted">
-            La gestión de usuarios para acceder a la ticketera sigue disponible temporalmente en{" "}
-            <button
-              onClick={() => navigate("/admin/ticketera/usuarios")}
-              className="font-medium text-violet-700 underline-offset-2 hover:underline"
-            >
-              /admin/ticketera/usuarios
-            </button>
-            . La migración a Sistemas se hará en una fase futura cuando se decida.
-          </p>
-        </CardContent>
-      </Card>
+      {/* ── Body apagado ───────────────────────────────────────────── */}
+      <div className="relative flex flex-1 flex-col gap-4 p-5 sm:p-6">
+        <div className="flex items-start gap-3 opacity-70">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 ring-1 ring-slate-200">
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base font-bold text-slate-700">{system.title}</h3>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">{system.subtitle}</p>
+          </div>
+        </div>
+
+        <p className="text-sm text-slate-500">{system.description}</p>
+
+        {/* CTA bloqueado */}
+        <span className="mt-auto inline-flex items-center justify-center gap-2 self-stretch rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-5 py-3 text-sm font-semibold text-slate-500">
+          <Lock className="h-3.5 w-3.5" /> Próximamente
+        </span>
+      </div>
     </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Página principal
+// ──────────────────────────────────────────────────────────────────────────────
+export default function SistemasDashboard() {
+  const activeCount = SYSTEMS.filter((s) => s.status === "active").length;
+  const devCount = SYSTEMS.filter((s) => s.status === "dev").length;
+
+  return (
+    <>
+      <style>{`
+        @keyframes shimmer-premium {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        @keyframes metric-pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.15); opacity: 0.85; }
+        }
+        @keyframes sistemas-reveal {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      <div className="relative space-y-8" style={{ animation: "sistemas-reveal 0.5s ease-out" }}>
+        {/* Glows ambientales del fondo del panel */}
+        <div className="pointer-events-none absolute -top-20 -right-20 -z-10 h-72 w-72 rounded-full bg-violet-200/30 blur-3xl" />
+        <div className="pointer-events-none absolute top-1/3 -left-32 -z-10 h-80 w-80 rounded-full bg-water-200/30 blur-3xl" />
+
+        {/* ── HEADER PREMIUM ──────────────────────────────────────── */}
+        <header className="relative overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/30 to-water-50/40 px-6 py-7 shadow-sm sm:px-8 sm:py-9">
+          {/* Glow accent del header */}
+          <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-violet-300/30 to-water-300/30 blur-3xl" />
+          {/* Dotted grid sutil */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.06]"
+            style={{
+              backgroundImage: "radial-gradient(circle at 1px 1px, hsl(var(--water-700)) 1px, transparent 0)",
+              backgroundSize: "22px 22px",
+            }}
+          />
+
+          <div className="relative">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-200/80 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-violet-700 shadow-sm backdrop-blur-md">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inset-0 animate-ping rounded-full bg-violet-400 opacity-70" />
+                <span className="relative h-1.5 w-1.5 rounded-full bg-violet-500" />
+              </span>
+              Ecosistema Infinito
+            </div>
+
+            <h1 className="text-3xl font-black leading-tight text-water-800 sm:text-4xl">
+              Panel de Sistemas
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-app-muted sm:text-base">
+              Centro operativo de plataformas internas, automatizaciones y herramientas
+              conectadas al ecosistema Infinito Water Park.
+            </p>
+
+            {/* Métricas */}
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+              <MetricChip
+                icon={<Activity className="h-3 w-3" />}
+                label="Sistemas activos"
+                value={String(activeCount)}
+                dotColor="#10b981"
+                pulse
+              />
+              <MetricChip
+                icon={<Cpu className="h-3 w-3" />}
+                label="En desarrollo"
+                value={String(devCount)}
+                dotColor="#f59e0b"
+              />
+              <MetricChip
+                icon={<Radio className="h-3 w-3" />}
+                label="Estado general"
+                value="Online"
+                dotColor="#06b6d4"
+                pulse
+              />
+            </div>
+          </div>
+        </header>
+
+        {/* ── GRID DE SISTEMAS ────────────────────────────────────── */}
+        <section className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {SYSTEMS.map((s) =>
+            s.status === "active" ? (
+              <ActiveSystemCard key={s.key} system={s} />
+            ) : (
+              <DevSystemCard key={s.key} system={s} />
+            )
+          )}
+        </section>
+
+        {/* ── Nota inferior ───────────────────────────────────────── */}
+        <footer className="rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50/40 via-white to-white px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-violet-700">Nota</p>
+          <p className="mt-1 text-sm text-app-muted">
+            Los sistemas en desarrollo se irán habilitando en fases futuras autorizadas.
+            Cuando un nuevo sistema entre en producción, va a aparecer como{" "}
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Activo
+            </span>
+            {" "}en este panel.
+          </p>
+        </footer>
+      </div>
+    </>
   );
 }

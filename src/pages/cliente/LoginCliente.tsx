@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Waves, Eye, EyeOff, Loader2, ArrowLeft, ShieldAlert, CheckCircle2,
+  Waves, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -13,13 +13,9 @@ import { Label } from "@/components/ui/label";
 // /cliente/login — login simple para visitantes del parque
 // =============================================================================
 // Sin PIN. Sin triple panel. Sin chequeo de rol obligatorio.
-// Si el usuario tiene rol interno (admin/editor/control_entradas), se le ofrece
-// el atajo al login administrativo sin signOut forzado.
 // Acepta ?redirect=<ruta> para volver al destino original tras login.
 // Acepta ?just_registered=true para mostrar banner de confirmación.
 // =============================================================================
-
-const INTERNAL_ROLES = new Set(["admin", "editor", "control_entradas"]);
 
 // Sanitiza el `?redirect=` para evitar open redirect: sólo aceptamos rutas
 // internas que empiecen con "/" y NO con "//" (que sería protocol-relative).
@@ -27,7 +23,7 @@ function safeRedirect(raw: string | null): string {
   if (!raw) return "/mi-cuenta";
   if (!raw.startsWith("/") || raw.startsWith("//")) return "/mi-cuenta";
   // Bloqueamos rutas administrativas como destino de un cliente
-  if (raw.startsWith("/admin") || raw.startsWith("/staff")) return "/mi-cuenta";
+  if (raw.startsWith("/admin") || raw.startsWith("/staff") || raw.startsWith("/sistemas")) return "/mi-cuenta";
   return raw;
 }
 
@@ -43,11 +39,8 @@ export default function LoginCliente() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [internalRoleNotice, setInternalRoleNotice] = useState(false);
 
-  // Si ya hay sesión activa, salir directo al destino o /mi-cuenta. No es
-  // necesario verificar rol interno acá: si el cliente es interno y volvió a
-  // /cliente/login, igualmente puede ir a su perfil y desde ahí cambiar de panel.
+  // Si ya hay sesión activa, salir directo al destino o /mi-cuenta.
   useEffect(() => {
     let cancel = false;
     supabase.auth.getSession().then(({ data }) => {
@@ -60,37 +53,15 @@ export default function LoginCliente() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setInternalRoleNotice(false);
 
-    const { data: signIn, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast({ title: "Error al iniciar sesión", description: error.message, variant: "destructive" });
       setLoading(false);
       return;
     }
-    const userId = signIn.user?.id;
-    if (!userId) {
-      toast({ title: "Sesión inválida", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
-
-    // Chequeo no-bloqueante: si el usuario tiene rol interno, le ofrecemos
-    // el atajo al login administrativo (sin signOut forzado).
-    const { data: rolesData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-
-    const hasInternalRole = (rolesData ?? []).some((r) => INTERNAL_ROLES.has(r.role as string));
 
     setLoading(false);
-
-    if (hasInternalRole) {
-      setInternalRoleNotice(true);
-      return;
-    }
-
     toast({ title: "¡Bienvenido!" });
     navigate(redirect, { replace: true });
   };
@@ -134,29 +105,6 @@ export default function LoginCliente() {
               <p className="text-xs text-emerald-800">
                 ¡Cuenta creada! Revisá tu email para confirmar tu cuenta. Ya podés iniciar sesión.
               </p>
-            </div>
-          )}
-
-          {/* Banner aviso usuario interno */}
-          {internalRoleNotice && (
-            <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 backdrop-blur-md">
-              <div className="flex items-start gap-2">
-                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-900">Esta entrada es para visitantes.</p>
-                  <p className="mt-0.5 text-xs text-amber-800">
-                    Tu cuenta tiene acceso administrativo. Para entrar al panel interno, ingresá por <code className="rounded bg-amber-100 px-1 py-0.5 text-[11px]">/login</code>.
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button size="sm" variant="default" className="h-8" onClick={() => navigate("/login")}>
-                      Ir al login interno
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-8" onClick={() => navigate("/mi-cuenta")}>
-                      Continuar como visitante
-                    </Button>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
@@ -235,13 +183,6 @@ export default function LoginCliente() {
               </div>
             </form>
           </div>
-
-          <p className="mt-5 text-center text-[11px] text-app-muted">
-            ¿Sos staff o administrador?{" "}
-            <Link to="/login" className="font-medium text-water-700 hover:underline">
-              Ingresá por el acceso interno
-            </Link>
-          </p>
         </div>
       </div>
     </div>
