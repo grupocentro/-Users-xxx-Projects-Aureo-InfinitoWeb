@@ -82,7 +82,7 @@ function shortCode(code: string) {
 // =============================================================================
 export default function MiCuenta() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { isStaff, isAdmin } = useUserRole();
+  const { isStaff, isAdmin, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -101,8 +101,14 @@ export default function MiCuenta() {
   // Fetch de datos (lógica preservada del componente original)
   // -------------------------------------------------------------------------
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || roleLoading) return;
     if (!user) { navigate("/cliente/login?redirect=/mi-cuenta"); return; }
+    // Staff QR puro (control_entradas sin admin) NO ve dashboard cliente.
+    // Redirect directo al scanner — sus credenciales no son de visitante.
+    if (isStaff && !isAdmin) {
+      navigate("/staff/scanner", { replace: true });
+      return;
+    }
 
     const fetchData = async () => {
       const [profileRes, comprasRes] = await Promise.all([

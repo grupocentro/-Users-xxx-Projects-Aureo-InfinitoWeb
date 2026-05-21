@@ -115,13 +115,16 @@ export default function Navbar() {
                       <ScanLine className="w-4 h-4" /> Escanear QR
                     </button>
                   )}
-                  <button
-                    onClick={() => navigate("/mi-cuenta")}
-                    className="ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 hover:bg-blue-50 flex items-center gap-1.5"
-                    style={{ color: scrolled ? "hsl(var(--water-700))" : "rgba(255,255,255,0.85)" }}
-                  >
-                    <UserCircle className="w-4 h-4" /> Mi Cuenta
-                  </button>
+                  {/* Mi Cuenta NO visible para staff QR puro (no es cliente) */}
+                  {!(isStaff && !isAdmin) && (
+                    <button
+                      onClick={() => navigate("/mi-cuenta")}
+                      className="ml-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 hover:bg-blue-50 flex items-center gap-1.5"
+                      style={{ color: scrolled ? "hsl(var(--water-700))" : "rgba(255,255,255,0.85)" }}
+                    >
+                      <UserCircle className="w-4 h-4" /> Mi Cuenta
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
@@ -306,17 +309,20 @@ export default function Navbar() {
                     <ScanLine className="w-5 h-5" /> Escanear QR
                   </button>
                 )}
-                <button
-                  onClick={() => handlePageLink("/mi-cuenta")}
-                  className="flex items-center gap-2 w-full text-left px-4 py-3.5 rounded-2xl font-bold text-base transition-all duration-200 hover:bg-blue-50"
-                  style={{
-                    color: "hsl(var(--water-800))",
-                    opacity: isOpen ? 1 : 0,
-                    transition: "opacity 0.3s ease 0.35s",
-                  }}
-                >
-                  <UserCircle className="w-5 h-5" /> Mi Cuenta
-                </button>
+                {/* Mi Cuenta oculto para staff QR puro */}
+                {!(isStaff && !isAdmin) && (
+                  <button
+                    onClick={() => handlePageLink("/mi-cuenta")}
+                    className="flex items-center gap-2 w-full text-left px-4 py-3.5 rounded-2xl font-bold text-base transition-all duration-200 hover:bg-blue-50"
+                    style={{
+                      color: "hsl(var(--water-800))",
+                      opacity: isOpen ? 1 : 0,
+                      transition: "opacity 0.3s ease 0.35s",
+                    }}
+                  >
+                    <UserCircle className="w-5 h-5" /> Mi Cuenta
+                  </button>
+                )}
               </>
             )}
           </nav>

@@ -65,10 +65,15 @@ export default function Login() {
           .select("role")
           .eq("user_id", userId);
         if (cancel) return;
-        const hasInternalRole = (rolesData ?? []).some((r) => {
-          const role = r.role as string;
-          return role === "admin" || role === "editor" || role === "control_entradas";
-        });
+        const roleStrings = (rolesData ?? []).map((r) => r.role as string);
+        // Staff QR (control_entradas) → directo al scanner sin pasar por el selector
+        if (roleStrings.includes("control_entradas") && !roleStrings.includes("admin")) {
+          navigate("/staff/scanner", { replace: true });
+          return;
+        }
+        const hasInternalRole = roleStrings.some(
+          (r) => r === "admin" || r === "editor" || r === "control_entradas",
+        );
         navigate(hasInternalRole ? "/admin/seleccionar" : "/mi-cuenta", { replace: true });
       } catch {
         if (!cancel) setSessionCheckDone(true);

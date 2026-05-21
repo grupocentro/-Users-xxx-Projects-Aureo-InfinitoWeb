@@ -9,7 +9,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function WebLayout() {
   const { user, loading: authLoading } = useAuth();
-  const { isAdminOrEditor, loading: roleLoading } = useUserRole();
+  const { isAdminOrEditor, isStaff, loading: roleLoading } = useUserRole();
   const { setMode } = useAdminMode();
   const navigate = useNavigate();
 
@@ -20,12 +20,17 @@ export default function WebLayout() {
       return;
     }
     if (!isAdminOrEditor) {
-      navigate("/");
+      // Staff QR puro → al scanner. Cualquier otro caso → home público.
+      if (isStaff) {
+        navigate("/staff/scanner", { replace: true });
+      } else {
+        navigate("/");
+      }
       return;
     }
     // Persistimos el modo al entrar para que el selector recuerde la elección.
     setMode("web");
-  }, [user, isAdminOrEditor, authLoading, roleLoading, navigate, setMode]);
+  }, [user, isAdminOrEditor, isStaff, authLoading, roleLoading, navigate, setMode]);
 
   if (authLoading || roleLoading) {
     return (

@@ -9,7 +9,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function SistemasLayout() {
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { isAdmin, isStaff, loading: roleLoading } = useUserRole();
   const { setMode } = useAdminMode();
   const navigate = useNavigate();
 
@@ -19,13 +19,18 @@ export default function SistemasLayout() {
       navigate("/sistemas");
       return;
     }
-    // Panel Sistemas es admin-only. Editor y staff rebotan al selector.
+    // Panel Sistemas es admin-only.
     if (!isAdmin) {
-      navigate("/admin/seleccionar");
+      // Staff QR puro → directo al scanner sin pasar por el selector.
+      if (isStaff) {
+        navigate("/staff/scanner", { replace: true });
+      } else {
+        navigate("/admin/seleccionar");
+      }
       return;
     }
     setMode("sistemas");
-  }, [user, isAdmin, authLoading, roleLoading, navigate, setMode]);
+  }, [user, isAdmin, isStaff, authLoading, roleLoading, navigate, setMode]);
 
   if (authLoading || roleLoading) {
     return (
