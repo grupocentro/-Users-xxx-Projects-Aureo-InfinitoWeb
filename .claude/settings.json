@@ -49,7 +49,22 @@
       "Bash(shasum -a 256)",
       "Bash(awk '{print $1}')",
       "Bash(awk '{print $5}')",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(git rm *)",
+      "Bash(command -v deno)",
+      "Bash(deno check *)",
+      "Bash(command -v supabase)",
+      "Bash(env)",
+      "Bash(echo \"--- .claude/settings.json \\(proyecto\\) ---\"; grep -E \"mcpServers|supabase\" /Users/xxx/Projects/Aureo/InfinitoWeb/.claude/settings.json 2>&1 | head -10; echo \"--- mcpServers en home ---\"; ls -la ~/.claude.json 2>&1 | head -3; echo \"--- Buscando mcp config ---\"; find ~/.claude -maxdepth 2 -name \"*.json\" 2>&1 | head -5)",
+      "Read(//Users/xxx/**)",
+      "Read(//Users/xxx/.claude/**)",
+      "Bash(command -v claude)",
+      "mcp__supabase__get_project_url",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_edge_functions",
+      "mcp__supabase__execute_sql",
+      "Bash(curl -s -o /dev/null -w \"without-key:%{http_code}\\\\n\" \"https://ywoynzvitzyjgeyohsfc.supabase.co/rest/v1/\")",
+      "Bash(curl -s -o /dev/null -w \"auth-health:%{http_code}\\\\n\" \"https://ywoynzvitzyjgeyohsfc.supabase.co/auth/v1/health\")"
     ],
     "additionalDirectories": [
       "/Users/xxx/.claude/projects/-Users-xxx-Projects-Aureo-InfinitoWeb",

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import {
-  ExternalLink, ArrowUpRight, Phone, Hotel, Sparkles, Users, ShieldCheck, Gauge,
+  ExternalLink, ArrowUpRight, Phone, Sparkles, Users, ShieldCheck, Gauge,
   Lock, Activity, Cpu, Radio, type LucideIcon,
 } from "lucide-react";
 import eventosHeroBg from "@/assets/eventos-hero-bg.jpg";
@@ -34,6 +34,8 @@ interface ActiveSystem extends SystemDef {
 
 interface DevSystem extends SystemDef {
   status: "dev";
+  /** Si true, usa el banner visual destacado tipo "heatmap analítico" en vez del genérico */
+  featured?: boolean;
 }
 
 type System = ActiveSystem | DevSystem;
@@ -55,15 +57,16 @@ const SYSTEMS: System[] = [
   },
   // ── 2–6. PLACEHOLDERS PREMIUM ────────────────────────────────────────────
   {
-    key: "hotelero",
-    title: "Sistema Operativo Hotelero",
-    subtitle: "Reservas, habitaciones y check-in",
-    description: "Gestión integral del alojamiento dentro del parque.",
-    icon: Hotel,
-    accentFrom: "from-indigo-500",
-    accentTo: "to-indigo-700",
-    glow: "rgba(99, 102, 241, 0.35)",
+    key: "demografico",
+    title: "Sistema de Control Demográfico",
+    subtitle: "Análisis de movimiento y comportamiento",
+    description: "Control en tiempo real del flujo de personas, puntos calientes, recorridos, estadísticas de juegos más visitados y zonas de concentración.",
+    icon: Activity,
+    accentFrom: "from-violet-500",
+    accentTo: "to-blue-600",
+    glow: "rgba(124, 92, 246, 0.45)",
     status: "dev",
+    featured: true,
   },
   {
     key: "eventos",
@@ -292,88 +295,215 @@ function ActiveSystemCard({ system }: { system: ActiveSystem }) {
 // ──────────────────────────────────────────────────────────────────────────────
 function DevSystemCard({ system }: { system: DevSystem }) {
   const Icon = system.icon;
+  const isFeatured = !!system.featured;
   return (
     <div
       role="group"
       aria-disabled="true"
-      className="group relative flex h-full select-none flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-slate-100/60 shadow-sm transition-all duration-500 hover:-translate-y-0.5 hover:border-slate-300/80"
+      className={`group relative flex h-full select-none flex-col overflow-hidden rounded-3xl border bg-gradient-to-br shadow-sm transition-all duration-500 hover:-translate-y-0.5 ${
+        isFeatured
+          ? "border-violet-200/80 from-violet-50/60 via-white to-blue-50/40 hover:border-violet-300/90"
+          : "border-slate-200/70 from-slate-50 via-white to-slate-100/60 hover:border-slate-300/80"
+      }`}
     >
-      {/* Glow apagado al hover */}
+      {/* Glow al hover (más fuerte si featured) */}
       <div
         className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
         style={{
-          background: `radial-gradient(ellipse at top, ${system.glow.replace(/0\.\d+\)/, "0.15)")}, transparent 70%)`,
+          background: `radial-gradient(ellipse at top, ${
+            isFeatured ? system.glow : system.glow.replace(/0\.\d+\)/, "0.15)")
+          }, transparent 70%)`,
         }}
       />
 
-      {/* ── Banner gris tecnológico ────────────────────────────────── */}
+      {/* ── Banner ────────────────────────────────────────────────── */}
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 8" }}>
-        {/* Gradiente base apagado */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(135deg, hsl(220 15% 28%) 0%, hsl(220 12% 38%) 55%, hsl(220 10% 48%) 100%)",
-          }}
-        />
-        {/* Dotted grid tecnológico */}
-        <div
-          className="absolute inset-0 opacity-25"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.25) 1px, transparent 0)",
-            backgroundSize: "18px 18px",
-          }}
-        />
-        {/* Líneas suaves diagonales */}
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            background:
-              "linear-gradient(115deg, transparent 0%, transparent 49.5%, rgba(255,255,255,0.08) 50%, transparent 50.5%, transparent 100%)",
-            backgroundSize: "60px 60px",
-          }}
-        />
-        {/* Glow apagado del color del sistema */}
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            background: `radial-gradient(circle at 30% 30%, ${system.glow}, transparent 60%)`,
-          }}
-        />
-        {/* Blur sutil sobre todo el banner */}
-        <div className="absolute inset-0 backdrop-blur-[1px]" />
+        {isFeatured ? (
+          // ─── Banner HEATMAP ANALÍTICO (Sistema de Control Demográfico) ───
+          <>
+            {/* Base oscura violeta-azul (mapa nocturno) */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(240 30% 18%) 0%, hsl(230 40% 22%) 55%, hsl(220 45% 26%) 100%)",
+              }}
+            />
+            {/* Grid tecnológico fino */}
+            <div
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(255,255,255,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px)",
+                backgroundSize: "32px 32px",
+              }}
+            />
+            {/* Heatmap: 6 manchas de calor distribuidas */}
+            <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 320 160">
+              <defs>
+                <radialGradient id="hot-red" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(239,68,68,0.85)" />
+                  <stop offset="60%" stopColor="rgba(239,68,68,0.18)" />
+                  <stop offset="100%" stopColor="rgba(239,68,68,0)" />
+                </radialGradient>
+                <radialGradient id="hot-amber" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(251,191,36,0.75)" />
+                  <stop offset="60%" stopColor="rgba(251,191,36,0.15)" />
+                  <stop offset="100%" stopColor="rgba(251,191,36,0)" />
+                </radialGradient>
+                <radialGradient id="hot-green" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(34,197,94,0.7)" />
+                  <stop offset="60%" stopColor="rgba(34,197,94,0.12)" />
+                  <stop offset="100%" stopColor="rgba(34,197,94,0)" />
+                </radialGradient>
+              </defs>
+              {/* Hotspot rojo (alto flujo) */}
+              <circle cx="80"  cy="55"  r="42" fill="url(#hot-red)" />
+              <circle cx="245" cy="100" r="38" fill="url(#hot-red)" />
+              {/* Hotspots amarillos (flujo medio) */}
+              <circle cx="170" cy="38"  r="34" fill="url(#hot-amber)" />
+              <circle cx="55"  cy="120" r="30" fill="url(#hot-amber)" />
+              {/* Hotspots verdes (flujo bajo / zona tranquila) */}
+              <circle cx="200" cy="135" r="28" fill="url(#hot-green)" />
+              <circle cx="290" cy="40"  r="24" fill="url(#hot-green)" />
 
-        {/* Lock central */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur-md">
-            <Lock className="h-6 w-6 text-white/75" />
-          </div>
-        </div>
+              {/* Rutas curvas (recorridos del público) */}
+              <path
+                d="M 20 80 Q 90 30 160 60 T 300 90"
+                stroke="rgba(255,255,255,0.35)"
+                strokeWidth="1"
+                strokeDasharray="3 3"
+                fill="none"
+              />
+              <path
+                d="M 30 130 Q 120 100 200 130 T 310 120"
+                stroke="rgba(167,139,250,0.4)"
+                strokeWidth="1"
+                strokeDasharray="2 4"
+                fill="none"
+              />
 
-        {/* Status pill EN DESARROLLO */}
-        <div className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-500/15 px-2.5 py-1 backdrop-blur-md">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-300" style={{ boxShadow: "0 0 6px #fcd34d" }} />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100">En desarrollo</span>
-        </div>
+              {/* Dots de "personas" — pequeños puntos blancos dispersos */}
+              {[
+                [70, 60], [85, 50], [78, 65], [175, 42], [165, 35], [180, 45],
+                [248, 95], [240, 105], [255, 105], [55, 118], [62, 125], [205, 132],
+                [295, 38], [148, 88], [110, 75], [220, 70], [40, 95], [275, 70],
+              ].map(([cx, cy], i) => (
+                <circle
+                  key={i}
+                  cx={cx}
+                  cy={cy}
+                  r="1.2"
+                  fill="rgba(255,255,255,0.85)"
+                />
+              ))}
+            </svg>
+            {/* Glow del sistema (violet-blue) */}
+            <div
+              className="absolute inset-0 opacity-50"
+              style={{ background: `radial-gradient(circle at 70% 30%, ${system.glow}, transparent 55%)` }}
+            />
+
+            {/* Métricas mini esquina superior izq */}
+            <div className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/30 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white/80 backdrop-blur-md">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inset-0 animate-ping rounded-full bg-emerald-300 opacity-70" />
+                <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              Live heatmap
+            </div>
+
+            {/* Icono Activity central con badge "vista previa" */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/12 ring-1 ring-white/25 backdrop-blur-md">
+                <Icon className="h-6 w-6 text-white/85" />
+              </div>
+            </div>
+
+            {/* Status pill */}
+            <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-500/20 px-2.5 py-1 backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-300" style={{ boxShadow: "0 0 6px #fcd34d" }} />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100">En desarrollo</span>
+            </div>
+          </>
+        ) : (
+          // ─── Banner default genérico (resto de placeholders) ───
+          <>
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(135deg, hsl(220 15% 28%) 0%, hsl(220 12% 38%) 55%, hsl(220 10% 48%) 100%)",
+              }}
+            />
+            <div
+              className="absolute inset-0 opacity-25"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.25) 1px, transparent 0)",
+                backgroundSize: "18px 18px",
+              }}
+            />
+            <div
+              className="absolute inset-0 opacity-30"
+              style={{
+                background:
+                  "linear-gradient(115deg, transparent 0%, transparent 49.5%, rgba(255,255,255,0.08) 50%, transparent 50.5%, transparent 100%)",
+                backgroundSize: "60px 60px",
+              }}
+            />
+            <div
+              className="absolute inset-0 opacity-40"
+              style={{
+                background: `radial-gradient(circle at 30% 30%, ${system.glow}, transparent 60%)`,
+              }}
+            />
+            <div className="absolute inset-0 backdrop-blur-[1px]" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur-md">
+                <Lock className="h-6 w-6 text-white/75" />
+              </div>
+            </div>
+            <div className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-500/15 px-2.5 py-1 backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-300" style={{ boxShadow: "0 0 6px #fcd34d" }} />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100">En desarrollo</span>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* ── Body apagado ───────────────────────────────────────────── */}
+      {/* ── Body ────────────────────────────────────────────────────── */}
       <div className="relative flex flex-1 flex-col gap-4 p-5 sm:p-6">
-        <div className="flex items-start gap-3 opacity-70">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 ring-1 ring-slate-200">
+        <div className={`flex items-start gap-3 ${isFeatured ? "" : "opacity-70"}`}>
+          <div
+            className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ring-1 ${
+              isFeatured
+                ? "bg-violet-100 text-violet-700 ring-violet-200"
+                : "bg-slate-100 text-slate-500 ring-slate-200"
+            }`}
+          >
             <Icon className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-base font-bold text-slate-700">{system.title}</h3>
-            <p className="mt-0.5 text-xs font-medium text-slate-500">{system.subtitle}</p>
+            <h3 className={`text-base font-bold ${isFeatured ? "text-water-800" : "text-slate-700"}`}>
+              {system.title}
+            </h3>
+            <p className={`mt-0.5 text-xs font-medium ${isFeatured ? "text-violet-700" : "text-slate-500"}`}>
+              {system.subtitle}
+            </p>
           </div>
         </div>
 
-        <p className="text-sm text-slate-500">{system.description}</p>
+        <p className={`text-sm ${isFeatured ? "text-app-muted" : "text-slate-500"}`}>{system.description}</p>
 
         {/* CTA bloqueado */}
-        <span className="mt-auto inline-flex items-center justify-center gap-2 self-stretch rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-5 py-3 text-sm font-semibold text-slate-500">
+        <span
+          className={`mt-auto inline-flex items-center justify-center gap-2 self-stretch rounded-2xl border border-dashed px-5 py-3 text-sm font-semibold ${
+            isFeatured
+              ? "border-violet-300 bg-violet-50/60 text-violet-700"
+              : "border-slate-300 bg-slate-50/80 text-slate-500"
+          }`}
+        >
           <Lock className="h-3.5 w-3.5" /> Próximamente
         </span>
       </div>
